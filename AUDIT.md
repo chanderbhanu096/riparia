@@ -14,7 +14,7 @@
 | **Owner** | chanderbhanu096 |
 | **Authoring agent** | Claude Code (Opus 5) |
 | **Review agent** | Codex / GPT (via `duet` skill) — see §7 |
-| **Status** | **P1 (ethical spine) COMPLETE and browser-verified. Domain layer grounded in published protocol (D-022). Next: P2 vision pass.** |
+| **Status** | **P1–P3 complete. Live at https://riparia-oah.azurewebsites.net · repo https://github.com/chanderbhanu096/riparia · backend modularised (D-024). Next: P4 insight + export.** |
 
 ---
 
@@ -449,6 +449,48 @@ Confident, fluent, specific, and **entirely invented**.
 - **Failure direction is contained, and deliberately so.** A false `shows_watercourse: true` means one question goes unasked — a missed prompt, not a false accusation. A false `shows_watercourse: false` means the citizen is asked "is this the image you meant?" and simply says yes. **Neither direction can harm the record or the citizen**, because vision output cannot reach urgency, cannot resolve an indicator, and cannot alter an answer.
 - **The tri-state guard held:** `visible_litter` and `appears_turbid` both returned `None` rather than `False` on an image containing neither, confirming that absence of evidence is not being recorded as evidence of absence.
 
+### D-024 — Modular structure: four seams, no ceremony
+- **Date:** 2026-09-14 · **Status:** ACTIVE · **Amends:** D-005, D-020
+- **Owner instruction, verbatim:** *"when building it follow the modular approach because that way adding removing or making will be much easier and will have less impact on the overall code if we need some changes later"*
+- **Decision:** restructure the backend into four layers, chosen because each is a **real boundary a future change will actually fall along** — not because layering is tidy.
+
+```
+backend/
+  main.py              composition root ONLY: build app, wire routers, mount static
+  config.py            all settings resolved in one place (env wins over .env)
+  domain/              what an observation MEANS. Pure: no I/O, no framework.
+    field_protocol.py    indicators + differentials, each cited to published method
+    assess.py            the four dimensions
+  adapters/            the only code that touches the outside world
+    store.py             persistence
+    vision/              model providers behind one interface
+      __init__.py          provider selection
+      azure_openai.py      Azure AI Foundry
+      null.py              offline; always available
+  api/                 HTTP shape only. No domain knowledge.
+    protocol.py  observations.py  review.py  shared.py
+```
+
+- **What each seam buys, concretely:**
+  | Future change | What it touches now |
+  |---|---|
+  | Add or reword an ecological indicator | `domain/field_protocol.py` — one dict entry. Nothing else, frontend included (it renders `/api/protocol`). |
+  | Swap the vision model (Azure → Anthropic → local) | one new file in `adapters/vision/` + one branch. Domain and API unchanged. |
+  | Run with no model at all | `VISION_PROVIDER=null` — **verified working**. |
+  | SQLite → Postgres | `adapters/store.py` only. |
+  | Add or remove an endpoint | one file in `api/`. |
+- **Why not more layers:** no repository interfaces over a 7-column table, no service layer between two thin things, no DI container. Each would be ceremony around a seam that does not exist. `domain/` importing nothing outward is the constraint that actually matters, and it is enforced by the import graph rather than by convention.
+- **Bug this refactor created and then fixed — worth recording, because it is a trap:** `domain/__init__.py` initially re-exported `from .assess import assess`, which bound the package attribute `assess` to the **function**, shadowing the **module** of the same name. `from domain import assess; assess.assess(...)` then failed with `AttributeError: 'function' object has no attribute 'assess'`. Re-exports removed, and the reason is documented in that file so nobody re-adds them. **Convenience re-exports were ceremony; deleting them fixed the bug and removed the trap.**
+- **Verified after refactor:** 38 contract checks green; full pipeline (submit with photo → Azure vision → citizen differential → cyanobacteria resolution → One Health precaution → queue ordering → attributed review) green; provider switching green in both directions.
+
+### D-025 — Shipped: public repository and live deployment
+- **Date:** 2026-09-14 · **Status:** ACTIVE · **Satisfies:** hackathon deliverables 4 and 5
+- **Repository (public):** https://github.com/chanderbhanu096/riparia
+- **Live application:** https://riparia-oah.azurewebsites.net
+- **Hosting:** Azure App Service (Linux, Python 3.12) on the owner's **existing** `signwise-plan` (B1). No new plan, no new cost centre. One app serves both the API and the built SPA from a single origin — so no CORS in production and one thing to deploy.
+- **Secret handling, checked rather than assumed:** `.env` is gitignored with `.env.example` committed; credentials are Azure **App Settings** (environment variables), never in the repo or the deployment artefact. Before both the first push and the first deploy, the staged tree and the zip were scanned for the literal key — **both confirmed clean**. `config.py` reads env first so the same code runs locally and in production with no branch.
+- **Known limitation, stated:** SQLite lives on the App Service filesystem, so the demo database resets on redeploy. Acceptable for a prototype; noted rather than hidden (D-021).
+
 ---
 
 ## 2. Implementation plan — REVISED per D-013 (real dates, ethical core first)
@@ -602,6 +644,7 @@ credible delivery; not the most elaborate architecture, and never guessed entran
 |---|---|---|
 | 2026-09-14 21:55 CEST | Claude (Opus 5) | File created. D-001…D-009 recorded. Track 3 selected over owner's initial Track 2 preference, with reversal path D-003. |
 | 2026-09-14 22:05 CEST | Codex (GPT) via `duet` | Adversarial strategy review, run `20260914-215657-dbebe6`. Verdict **revise**, 8 findings. Earlier run `20260914-215306-6baadf` discarded (inverted roles, placeholder output). |
+| 2026-09-15 00:10 CEST | Claude (Opus 5) | **P3 complete** (reviewer detail: triage rationale, resolved field answers, One Health precaution, model note shown *with* its unreliability stated). **D-024** modular restructure into domain/adapters/api + composition root; fixed a re-export that shadowed a module. **D-025** shipped: public repo + live Azure App Service on the existing B1 plan; secret scans clean before both push and deploy. |
 | 2026-09-14 23:25 CEST | Claude (Opus 5) | **D-023**: Azure AI Foundry (`gpt-4.1-mini` on existing `signwise-ai`) adopted for the photo pass — no new key or resource. First test call **hallucinated** rocks and vegetation in a 96×96 two-colour test image; recorded as first-hand evidence for R8 and used to harden the vision pass to question-raising only (tri-state findings, never `false`; never touches urgency). Becomes the on-camera failure case D-012 requires. |
 | 2026-09-14 23:05 CEST | Claude (Opus 5) | **P1 spine complete and verified in browser.** Backend (FastAPI+SQLite), `field_protocol.py` (10 cited indicators, 3 differentials), `assess.py` (4 dimensions), 38 contract checks green, React PWA. Verified live: shatter test demotes a sheen high→low *by citizen answer*; cyanobacteria path emits One Health precaution; queue ranks by consequence under uncertainty. Two bugs found and fixed by own tests/browser check (empty-list completeness; vanishing differential feedback). README written with mandatory limitations section (D-021). |
 | 2026-09-14 22:40 CEST | Claude (Opus 5) | Owner required expert-grade provenance. Added **D-021** (no invented domain content; cite published method next to the logic) and **D-022** (ARMI trigger-level precedent; shatter test / foam / cyanobacteria-vs-sewage-fungus differentials; WFD non-conflation guardrail). Domain layer rebuilt as `field_protocol.py`. |

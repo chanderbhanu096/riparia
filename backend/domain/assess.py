@@ -31,7 +31,7 @@ one is phrased as a question to the citizen, never as a verdict about them.
 
 from typing import Any
 
-import field_protocol as fp
+from . import field_protocol as fp
 
 UNSURE = "unsure"
 

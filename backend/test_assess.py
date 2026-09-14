@@ -9,8 +9,8 @@ If one of these fails, the system has started making scientific claims it cannot
 defend -- risk R8, the top risk in this project.
 """
 
-import field_protocol as fp
-from assess import (
+from domain import field_protocol as fp
+from domain.assess import (
     assess, completeness, detected_inconsistency, ecological_urgency,
     field_differentials,
 )

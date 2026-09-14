@@ -1,4 +1,4 @@
-"""Photo pass via Azure AI Foundry (AI Services), vision-capable chat deployment.
+"""Azure AI Foundry (AI Services) vision provider, via a chat deployment.
 
 WHAT THIS MODULE IS ALLOWED TO DO (AUDIT.md D-023):
 
@@ -38,7 +38,9 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-_ENV_PATH = pathlib.Path(__file__).parent / ".env"
+import config
+
+NAME = "azure_openai"
 
 # Deliberately narrow and low-inference. The model is asked what is IN FRAME, never
 # what it MEANS -- all ecological interpretation lives in field_protocol.py, where
@@ -65,19 +67,6 @@ option. Only report "yes" when you can actually see it; otherwise "cannot_tell".
 """
 
 
-def _config() -> dict[str, str] | None:
-    if not _ENV_PATH.exists():
-        return None
-    env = dict(
-        line.split("=", 1)
-        for line in _ENV_PATH.read_text().splitlines()
-        if "=" in line and not line.startswith("#")
-    )
-    need = ("AZURE_AI_ENDPOINT", "AZURE_AI_DEPLOYMENT", "AZURE_AI_API_VERSION",
-            "AZURE_AI_KEY")
-    return env if all(env.get(k) for k in need) else None
-
-
 def analyse(photo_path: pathlib.Path | None, timeout: float = 20.0
             ) -> tuple[dict[str, Any] | None, str]:
     """Return (findings, status).
@@ -89,10 +78,7 @@ def analyse(photo_path: pathlib.Path | None, timeout: float = 20.0
     that raises into the request handler, because a model problem must never cost
     a citizen their observation (AUDIT.md A4).
     """
-    if photo_path is None or not photo_path.exists():
-        return None, "no_photo"
-
-    cfg = _config()
+    cfg = config.azure_vision()
     if cfg is None:
         return None, "unavailable"
 

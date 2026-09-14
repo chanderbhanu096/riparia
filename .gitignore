@@ -1,0 +1,26 @@
+# secrets
+backend/.env
+*.env
+!*.env.example
+
+# python
+backend/.venv/
+__pycache__/
+*.pyc
+backend/riparia.db
+backend/uploads/
+
+# node
+frontend/node_modules/
+frontend/dist/
+
+# duet run artefacts
+.duet/runs/
+
+# local tooling
+.claude/settings.local.json
+.duet/
+
+# vite starter assets, unused
+frontend/src/assets/
+frontend/public/icons.svg

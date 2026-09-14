@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  --color-stream-50:  #f0f7f7;
+  --color-stream-100: #d9ebec;
+  --color-stream-300: #8cbcc0;
+  --color-stream-600: #2f6f76;
+  --color-stream-700: #245358;
+  --color-stream-900: #12292c;
+}
+
+/* Visible focus everywhere. Accessibility is 15% of the score and is never
+   traded away (AUDIT.md D-019). */
+:focus-visible {
+  outline: 3px solid var(--color-stream-600);
+  outline-offset: 2px;
+}

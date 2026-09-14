@@ -1,0 +1,23 @@
+{
+  "artboards": [
+    { "file": "Current.dc.html",    "x": 0,    "y": 0, "w": 390, "h": 844, "title": "Now — live" },
+    { "file": "Main.dc.html",       "x": 480,  "y": 0, "w": 390, "h": 844, "title": "1 · Cyanotype" },
+    { "file": "Nocturne.dc.html",   "x": 960,  "y": 0, "w": 390, "h": 844, "title": "2 · Nocturne" },
+    { "file": "Broadsheet.dc.html", "x": 1440, "y": 0, "w": 390, "h": 844, "title": "3 · Broadsheet" }
+  ],
+  "annotations": [
+    { "id": "premise", "x": 0, "y": -330, "w": 870,
+      "text": "THE MOVE THAT MATTERS — stop describing the three growths, and show them.\n\nIn 1843 Anna Atkins published \"Photographs of British Algae: Cyanotype Impressions\" — the first book ever illustrated with photographs. Its stated purpose was to be a visual companion to Harvey's unillustrated 1841 \"Manual of British Algae\", because written descriptions of algae were not enough to identify them by.\n\nThat is this screen's exact problem. A person at a streambank cannot tell filamentous algae from a cyanobacterial bloom from sewage fungus by reading three sentences — and getting it wrong in either direction means a missed pollution incident or a false alarm. So every direction below draws the specimens. The illustration is not decoration here; it is the feature.\n\nAll four artboards carry identical copy, lifted verbatim from backend/domain/field_protocol.py, and identical specimen geometry. Design is the only variable." },
+    { "id": "now", "x": 0, "y": -110, "w": 390,
+      "text": "NOW — what is deployed.\n\nTailwind defaults: system-ui, 8px radii, one teal ramp, and the three options as plain text rows. Competent, and forgettable — a panel scoring 100+ entries has seen this exact screen many times today.\n\nShown here with the same copy as the others so the comparison is fair." },
+    { "id": "d1", "x": 480, "y": -110, "w": 390,
+      "text": "1 · CYANOTYPE  (my recommendation)\n\nAtkins' own process, 183 years on: Prussian blue ground, specimens as white photogram silhouettes, EB Garamond, plate numbering, an uneven brush-coated wash rather than a flat fill.\n\nWhy: it is the only direction whose look argues for its own feature. A panel of freshwater scientists will recognise the reference immediately, and it makes a citizen-science app feel like it belongs to the scientific record.\n\nTradeoff: dark and dense. Needs testing in direct sunlight." },
+    { "id": "d2", "x": 960, "y": -110, "w": 390,
+      "text": "2 · NOCTURNE\n\nDark water optics — caustic light through the ground, specimens drawn as luminous line work, Space Grotesk, one mint signal and one amber alarm.\n\nWhy: people report urban streams at dawn and dusk, and a white screen at 6am is hostile. This is the direction with a practical argument as well as an aesthetic one, and the alarm state reads instantly.\n\nTradeoff: the most conventionally 'tech' of the three. Least distinctive to a scientific panel." },
+    { "id": "d3", "x": 1440, "y": -110, "w": 390,
+      "text": "3 · BROADSHEET\n\nA public water notice, not an app screen. Newsprint, Bodoni Moda at 33px, 3px rules, one stamped red, the chosen specimen reversed out in solid ink.\n\nWhy: the boldest hierarchy of the three and the only one that looks consequential from arm's length. A pollution report should feel like it matters.\n\nTradeoff: loud. Carries urgency superbly and routine reports less well." },
+    { "id": "next", "x": 0, "y": 900, "w": 870,
+      "text": "Pick one and I will carry it through the whole app — capture, review queue, reviewer detail — then move on to P4.\n\nThe three safer directions from the first pass (field guide, field instrument, clinical record) are still on disk if you want them back, but you called them boring and I agree, so they are not on the canvas." }
+  ],
+  "launch": { "view": "canvas" }
+}

@@ -504,6 +504,30 @@ backend/
 - **Accessibility floors enforced in the generator** after the same review found them broken: no text below 12px (was 10.5px), the urgency line is never the smallest type on the screen (it was, in all three first-pass directions — which inverts the hierarchy exactly where it costs most), body contrast at or above 4.5:1, tap targets at or above 44px, icons inline SVG only (one dingbat removed).
 - **Canvas:** https://claude.ai/artifact/Gg5A9vHAgoTA2GZWvZftzd
 
+### D-027 — Recommendation reversed: Broadsheet, not Cyanotype
+- **Date:** 2026-09-15 · **Status:** ACTIVE — *awaiting owner's final pick* · **Amends:** D-026
+- **Trigger:** owner asked for GPT's independent read. Codex reviewed all three directions (`duet` run `20260915-064407-d0f5f5`) and picked **Broadsheet**, explicitly rejecting the Cyanotype recommendation on record. Full write-up: [`DESIGN_VERDICT_GPT.md`](DESIGN_VERDICT_GPT.md). **Accepted.**
+
+**The functional defect that settled it.** The three options name **colours** — "Long **green** strands", "**Blue-green**, like spilled paint", "**Grey or dirty-white** slimy strands". Every direction drew all three in a single ink.
+> *"Monochrome silhouettes discard the color distinctions named in the options."*
+Colour is the first thing a person matches, and we had thrown it away in the very feature built to help them match. Specimens are now drawn in their own diagnostic colours, with shape still distinct (strands / colonies / tufts) so the reading survives colour blindness and greyscale print — three redundant channels rather than one.
+
+**And that disqualifies Cyanotype on its own terms.** A cyanotype is **monochrome by process**. Its concept structurally forbids the single most diagnostic feature of the thing it exists to identify. The concept fights the function, and function wins.
+
+**Other arguments accepted:**
+- **The reviewer surfaces decide it, and I under-weighted them.** Two of the three surfaces left to build are dense reviewer UI (triage queue, detail view with four dimensions). A light ground with a sans body extends there; an ornate dark plate does not. That is two-thirds of the remaining work.
+- **The Atkins reference was over-claimed.** *"Freshwater expertise does not imply photographic-history recognition."* Demoted from a legitimacy argument to an optional one-line design credit. The historical insight that led to drawing the specimens **stands on its own** — it was right about the product even though the aesthetic it suggested was wrong.
+- **Nocturne's justification was thin.** *"Caustics are decoration, not evidence of field suitability."* Agreed — and our own note that the middle renders flat undercut it further.
+- **Drawings are schematic aids, never identification plates.** Not validated against real field examples. Stated on the canvas; raises the value of AUDIT Q8/Q9 (an ecologist's hour).
+- **Sunlight legibility is unverified for all three** and cannot be settled from source. Needs a real phone outdoors.
+
+**Five corrections applied to Broadsheet:** "Water notice" → **"Field observation"** (a citizen report must not masquerade as an official warning); explicit **"Your answer"** with a check instead of an inverted black row; red reserved for the precaution so a routine report does not read as an emergency; **"Awaiting review"** beside the reading; body text to 15px; paper grain removed.
+
+**Clipping caught and fixed by measurement, not arithmetic.** Raising body text to 16px pushed the artboard **89px over** its 844px frame, clipping the end of the safety copy — *"Dogs have died after drinking at affected water"* — and the footer entirely. Found by measuring `scrollHeight` in a browser rather than estimating, trimmed everywhere **except the safety text**, and re-measured to exactly 844 with zero overflow.
+> **Rule for the rest of this project: never let the safety copy be what gets cut. Measure the frame, do not estimate it.**
+
+- **Canvas:** https://claude.ai/artifact/Gg5A9vHAgoTA2GZWvZftzd
+
 ---
 
 ## 2. Implementation plan — REVISED per D-013 (real dates, ethical core first)
@@ -657,6 +681,7 @@ credible delivery; not the most elaborate architecture, and never guessed entran
 |---|---|---|
 | 2026-09-14 21:55 CEST | Claude (Opus 5) | File created. D-001…D-009 recorded. Track 3 selected over owner's initial Track 2 preference, with reversal path D-003. |
 | 2026-09-14 22:05 CEST | Codex (GPT) via `duet` | Adversarial strategy review, run `20260914-215657-dbebe6`. Verdict **revise**, 8 findings. Earlier run `20260914-215306-6baadf` discarded (inverted roles, placeholder output). |
+| 2026-09-15 07:00 CEST | Claude (Opus 5) | **D-027** recommendation reversed to **Broadsheet** after Codex picked it and rejected Cyanotype. Decisive: the options name colours and every direction drew them in one ink — and a cyanotype is monochrome by process, so its concept forbids the most diagnostic feature. Specimens now coloured. Five corrections applied. A 16px body pushed the artboard 89px over frame and clipped the safety copy; caught by measuring in-browser, fixed to exactly 844. |
 | 2026-09-15 01:05 CEST | Claude (Opus 5) | **D-026** visual direction. Anna Atkins' 1843 cyanotypes of British algae — published because text descriptions could not identify algae — reframed the differential: draw the specimens rather than describe them. Three bold directions published; three conservative ones dropped. Copy and specimen geometry centralised so parity is structural; a11y floors enforced in the generator after a review found 10.5px labels and the urgency line set in the smallest type on screen. |
 | 2026-09-15 00:10 CEST | Claude (Opus 5) | **P3 complete** (reviewer detail: triage rationale, resolved field answers, One Health precaution, model note shown *with* its unreliability stated). **D-024** modular restructure into domain/adapters/api + composition root; fixed a re-export that shadowed a module. **D-025** shipped: public repo + live Azure App Service on the existing B1 plan; secret scans clean before both push and deploy. |
 | 2026-09-14 23:25 CEST | Claude (Opus 5) | **D-023**: Azure AI Foundry (`gpt-4.1-mini` on existing `signwise-ai`) adopted for the photo pass — no new key or resource. First test call **hallucinated** rocks and vegetation in a 96×96 two-colour test image; recorded as first-hand evidence for R8 and used to harden the vision pass to question-raising only (tri-state findings, never `false`; never touches urgency). Becomes the on-camera failure case D-012 requires. |

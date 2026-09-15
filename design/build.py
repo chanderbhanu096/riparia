@@ -174,11 +174,11 @@ def nocturne():
     screen at 6am is hostile."""
     mint, amber = "#57dfae", "#ff8a5c"
     rows = [
-        ("01", draw("filament", 66, "#a9e6f4", opacity=0.95, weight=1.3, filt="url(#glow)"),
+        ("01", draw("filament", 66, "#8fdc72", opacity=0.95, weight=1.3, filt="url(#glow)"),
          C["opt1"], C["opt1_name"], False),
         ("02", draw("cyano", 66, mint, opacity=1.0, filt="url(#glow)"),
          C["opt2"], C["opt2_name"], True),
-        ("03", draw("fungus", 66, "#a9e6f4", opacity=0.95, weight=1.3, filt="url(#glow)"),
+        ("03", draw("fungus", 66, "#cfd6cd", opacity=0.95, weight=1.3, filt="url(#glow)"),
          C["opt3"], C["opt3_name"], False),
     ]
     items = []
@@ -294,100 +294,112 @@ def nocturne():
 
 # --------------------------------------------------------------- BROADSHEET ---
 def broadsheet():
-    """A public notice, not an app screen. Newsprint, a heavy display serif and one
-    stamped red. Built for the case where the report matters and should look like
-    it matters."""
-    ink, red, cream = "#15120e", "#c0301c", "#f3f0e7"
+    """A field observation sheet. Newsprint ground, one display face, one red.
+
+    Colour carries the diagnosis. The three options name colours -- "green strands",
+    "blue-green, like spilled paint", "grey or dirty-white slime" -- so drawing them
+    all in one ink threw away the first thing a person matches. Each specimen is now
+    drawn in its own colour, and shape still differs (strands / blobs / tufts) so the
+    distinction survives colour blindness and greyscale print.
+
+    Red is reserved for the precaution. A routine report must not look like an
+    emergency, and a citizen report is not an official warning -- hence "Field
+    observation", not "Water notice".
+    """
+    ink, red, cream, rule = "#15120e", "#b02d18", "#f3f0e7", "#cdc5b4"
+    # diagnostic colours, legible on cream and distinct in greyscale by value
+    algae, cyano, fungus = "#3f6b24", "#137a72", "#7e7d74"
     rows = [
-        ("I", draw("filament", 66, ink, opacity=1.0, weight=1.4),
+        ("I", draw("filament", 58, algae, opacity=1.0, weight=1.4),
          C["opt1"], C["opt1_name"], False),
-        ("II", draw("cyano", 66, cream, bg=ink, opacity=1.0),
+        ("II", draw("cyano", 58, cyano, opacity=1.0),
          C["opt2"], C["opt2_name"], True),
-        ("III", draw("fungus", 66, ink, opacity=1.0, weight=1.4),
+        ("III", draw("fungus", 58, fungus, opacity=1.0, weight=1.4),
          C["opt3"], C["opt3_name"], False),
     ]
+    check = ('<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="%s" '
+             'stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" '
+             'style="flex-shrink: 0"><path d="M20 6 9 17l-5-5"></path></svg>') % ink
     items = []
     for num, svg, label, latin, sel in rows:
         if sel:
-            box = f"background: {ink}; border: 1px solid {ink};"
-            n_c, t_c, l_c = "#e8b4a6", cream, "#c3b6ac"
+            box = f"background: #ffffff; border: 2px solid {ink}; padding: 7px 10px;"
+            tag = (f'<span style="display: inline-flex; align-items: center; gap: 5px; '
+                   f'color: {ink}; font-weight: 700">{check}Your answer</span>')
         else:
-            box = "background: transparent; border: 1px solid #cdc5b4;"
-            n_c, t_c, l_c = "#8a7f6f", ink, "#6d6354"
+            box = f"background: transparent; border: 1px solid {rule}; padding: 8px 11px;"
+            tag = f'<span style="color: #7a7061">{num}</span>'
         items.append(f"""
-      <div style="display: flex; align-items: center; gap: 14px; padding: 7px 11px;
-                  min-height: 44px; box-sizing: border-box; {box}">
+      <div style="display: flex; align-items: center; gap: 12px; min-height: 44px;
+                  box-sizing: border-box; {box}">
         {svg}
         <div>
           <div style="font-family: Archivo, system-ui, sans-serif; font-size: 12px;
-                      letter-spacing: 0.18em; font-weight: 700; color: {n_c}">{num}</div>
+                      letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700">{tag}</div>
           <div style="font-family: Archivo, system-ui, sans-serif; font-size: 15px;
-                      line-height: 20px; font-weight: 500; color: {t_c}; margin-top: 2px;
+                      line-height: 20px; font-weight: 500; color: {ink}; margin-top: 2px;
                       text-wrap: pretty">{label}</div>
           <div style="font-family: Archivo, system-ui, sans-serif; font-size: 12.5px;
-                      line-height: 17px; color: {l_c}; letter-spacing: 0.03em">{latin}</div>
+                      line-height: 16px; color: #6d6354">{latin}</div>
         </div>
       </div>""")
 
-    helmet = """  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,600;0,6..96,700;1,6..96,400&family=Archivo:wght@400;600;700&display=swap">
+    helmet = """  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700&family=Archivo:wght@400;500;600;700&display=swap">
   <style>
     body { margin: 0; background: #f3f0e7; color: #15120e;
            font-family: Archivo, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
-    a { color: #c0301c; } a:hover { color: #8f2214; }
+    a { color: #b02d18; } a:hover { color: #8a2212; }
     .disp { font-family: "Bodoni Moda", Georgia, serif; }
-    .kick { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700; }
+    .kick { font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; }
   </style>"""
 
     body = f"""
-<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: {cream}">
-  <svg width="390" height="844" preserveAspectRatio="none" style="position: absolute; inset: 0; opacity: 0.4">
-    <defs><filter id="fibre"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" seed="3"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter></defs>
-    <rect width="390" height="844" filter="url(#fibre)" opacity="0.09"></rect>
-  </svg>
+<div style="width: 390px; height: 844px; overflow: hidden; background: {cream};
+            display: flex; flex-direction: column; box-sizing: border-box; padding: 13px 20px 0">
 
-  <div style="position: relative; display: flex; flex-direction: column; height: 844px;
-              box-sizing: border-box; padding: 16px 20px 0">
+  <div style="border-bottom: 3px solid {ink}; padding-bottom: 7px; display: flex;
+              align-items: baseline; justify-content: space-between; gap: 12px">
+    <span class="disp" style="font-size: 25px; font-weight: 700; letter-spacing: 0.02em">{C["brand"]}</span>
+    <span class="kick" style="color: #5c5347">Field observation</span>
+  </div>
+  <div style="border-bottom: 1px solid {rule}; padding: 5px 0 6px; font-size: 12.5px; color: #4a4137">{C["site"]}</div>
 
-    <div style="border-bottom: 3px solid {ink}; padding-bottom: 7px; display: flex;
-                align-items: baseline; justify-content: space-between">
-      <span class="disp" style="font-size: 25px; font-weight: 700; letter-spacing: 0.02em">{C["brand"]}</span>
-      <span class="kick" style="color: {red}">Water notice</span>
+  <div style="padding-top: 13px">
+    <div class="kick" style="color: {red}">{C["prompt_kicker"]}</div>
+    <div class="disp" style="font-size: 28px; line-height: 30px; font-weight: 700;
+                             margin-top: 5px; text-wrap: pretty">{C["question"]}</div>
+    <div style="font-size: 14px; line-height: 19px; color: #4a4137; margin-top: 6px;
+                text-wrap: pretty">{C["question_sub"]}</div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 6px; padding-top: 11px">{"".join(items)}
+  </div>
+
+  <div style="margin-top: 11px; border-top: 3px solid {ink}; padding-top: 8px">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px">
+      <div class="disp" style="font-size: 19px; line-height: 23px; font-weight: 700;
+                               text-wrap: pretty">{C["reading_label"]}</div>
+      <span class="kick" style="font-size: 11.5px; color: #5c5347; flex-shrink: 0;
+                                white-space: nowrap">Awaiting review</span>
     </div>
-    <div style="border-bottom: 1px solid {ink}; padding: 5px 0 6px; font-size: 12.5px;
-                letter-spacing: 0.02em; color: #4a4137">{C["site"]}</div>
+    <div style="font-size: 14.5px; line-height: 20px; color: #2b241c; margin-top: 4px;
+                text-wrap: pretty">{C["reading"]}</div>
+  </div>
 
-    <div style="padding-top: 13px">
-      <div class="kick" style="color: {red}">{C["prompt_kicker"]}</div>
-      <div class="disp" style="font-size: 33px; line-height: 35px; font-weight: 700;
-                               margin-top: 5px; text-wrap: pretty">{C["question"]}</div>
-      <div style="font-size: 14px; line-height: 20px; color: #4a4137; margin-top: 7px;
-                  text-wrap: pretty">{C["question_sub"]}</div>
+  <div style="margin-top: 9px; border: 2px solid {red}; background: #fbf1ee; padding: 11px 13px;
+              display: flex; gap: 10px">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{red}" stroke-width="1.9"
+         stroke-linecap="round" style="flex-shrink: 0; margin-top: 1px">
+      <path d="M12 9v4.5M12 17h.01"></path>
+      <path d="M10.3 3.9 2.4 17.6A1.9 1.9 0 0 0 4 20.5h16a1.9 1.9 0 0 0 1.6-2.9L13.7 3.9a1.9 1.9 0 0 0-3.4 0Z"></path>
+    </svg>
+    <div style="font-size: 15px; line-height: 21px; color: #45201a; text-wrap: pretty">
+      <span style="font-weight: 700; color: {red}">{C["precaution_label"]}.</span> {C["precaution"]}
     </div>
+  </div>
 
-    <div style="display: flex; flex-direction: column; gap: 6px; padding-top: 13px">{"".join(items)}
-    </div>
-
-    <div style="margin-top: 13px; border-top: 3px solid {ink}; padding-top: 9px">
-      <div class="disp" style="font-size: 21px; line-height: 25px; font-weight: 700;
-                               color: {red}; text-wrap: pretty">{C["reading_label"]}</div>
-      <div style="font-size: 14px; line-height: 20px; color: #2b241c; margin-top: 4px;
-                  text-wrap: pretty">{C["reading"]}</div>
-    </div>
-
-    <div style="margin-top: 11px; background: {ink}; padding: 11px 13px; display: flex; gap: 10px">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#f3cfc4" stroke-width="1.8"
-           stroke-linecap="round" style="flex-shrink: 0; margin-top: 1px">
-        <path d="M12 9v4.5M12 17h.01"></path>
-        <path d="M10.3 3.9 2.4 17.6A1.9 1.9 0 0 0 4 20.5h16a1.9 1.9 0 0 0 1.6-2.9L13.7 3.9a1.9 1.9 0 0 0-3.4 0Z"></path>
-      </svg>
-      <div style="font-size: 13.5px; line-height: 19px; color: #ece5da; text-wrap: pretty">
-        <span style="font-weight: 700; color: #ffffff">{C["precaution_label"]}.</span> {C["precaution"]}
-      </div>
-    </div>
-
-    <div style="margin-top: auto; border-top: 1px solid {ink}; padding: 9px 0 14px">
-      <div style="font-size: 12.5px; line-height: 17px; color: #4a4137; text-wrap: pretty">{C["footer"]}</div>
-    </div>
+  <div style="margin-top: auto; border-top: 1px solid {rule}; padding: 8px 0 12px">
+    <div style="font-size: 12.5px; line-height: 17px; color: #4a4137; text-wrap: pretty">{C["footer"]}</div>
   </div>
 </div>
 """

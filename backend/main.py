@@ -46,6 +46,29 @@ app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def cache_headers(request, call_next):
+    """Tell browsers what may be cached. Without this they guess, and they guess badly.
+
+    Vite fingerprints every asset (index-CESah9ib.js), so those files are immutable
+    and can be cached forever. index.html must NOT be: it is the shell that names
+    which fingerprinted bundle to load, so a cached shell keeps pointing at a bundle
+    that no longer exists and the user sees a stale app -- or a blank one -- until
+    they hard-refresh. That is a deploy-day failure and a demo-day failure, so it is
+    fixed at the server rather than explained to each viewer.
+    """
+    resp = await call_next(request)
+    path = request.url.path
+    if path.startswith("/assets/"):
+        resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    elif path.startswith("/api/"):
+        resp.headers["Cache-Control"] = "no-store"
+    else:
+        # index.html, and the uploads a reviewer may re-fetch
+        resp.headers["Cache-Control"] = "no-cache"
+    return resp
+
+
 app.include_router(protocol.router)
 app.include_router(observations.router)
 app.include_router(review.router)

@@ -18,7 +18,7 @@ export default function App() {
           <nav className="flex gap-5 pb-1" aria-label="Switch role">
             {[['citizen', 'Report'], ['reviewer', 'Review']].map(([m, label]) => (
               <button key={m} onClick={() => setMode(m)} aria-current={mode === m}
-                className={`meta pb-1 ${mode === m
+                className={`meta meta-stage inline-flex min-h-11 items-center px-1 ${mode === m
                     ? 'text-ink border-b-2 border-ink'
                     : 'text-faint border-b-2 border-transparent hover:text-ink'}`}>
                 {label}
@@ -26,7 +26,7 @@ export default function App() {
             ))}
           </nav>
         </div>
-        <p className="border-b border-rule py-2 text-[13px] leading-[18px] text-muted">
+        <p className="measure border-b border-rule py-2 body-2 text-muted">
           AI asks the question. You answer it. A named reviewer decides.
         </p>
       </header>
@@ -38,7 +38,7 @@ export default function App() {
       </main>
 
       <footer className="mx-auto max-w-4xl px-5 pb-12 pt-2">
-        <div className="measure border-t border-rule pt-3 text-[12px] leading-[17px] text-faint">
+        <div className="measure border-t border-rule pt-3 body-2 text-faint">
           Prototype for the OneAquaHealth IEEE Global Hackathon 2026, Track 3. Not
           affiliated with the OneAquaHealth consortium. Drawings are schematic aids
           shown beside the descriptions, not identification plates, and have not been

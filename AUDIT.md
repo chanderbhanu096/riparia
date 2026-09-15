@@ -571,6 +571,30 @@ Colour is the first thing a person matches, and we had thrown it away in the ver
 - **Colour discipline preserved.** Indicator marks are drawn in ink, not colour, because in this app **colour means diagnosis** (D-027) and at selection time nothing has been diagnosed. Colour still arrives at the differential, where it carries meaning.
 - **Cut during the pass:** a `+1 Q` badge on indicators that carry a follow-up question. Cryptic jargon dressed as information; the question announces itself when it appears.
 
+### D-030 — Refinement pass, and a correction flow that collected no correction
+- **Date:** 2026-09-15 · **Status:** ACTIVE · **Amends:** D-028, D-029 · **Source:** [`UX_REVIEW_GPT.md`](UX_REVIEW_GPT.md), run `20260915-074256-dc9d8c`
+- **Owner asked for** typographic refinement and rounded corners, and for GPT's UX/UI read. Codex agreed on both and then found three defects that matter more than either.
+
+**THE ONE THAT MATTERED — a correction that contained no correction.**
+The "Let me update that" button stored the literal sentence *"Citizen updated their answer after review"* and the UI replied *"your update sits alongside your original answer"* — **while never showing an input and never capturing a replacement answer.** The citizen was told their correction was saved; nothing had been. In the one flow this entire product exists to protect (D-012: the citizen's account is preserved and clarification is meaningful), the app was lying to them.
+> Fixed: the button now opens the actual options for that field — or a free-text box where the field has none — and stores what the person really said, shown back to them in quotes. A correction containing no correction is worse than no correction at all.
+
+**Rounded corners — owner right, and scoped.** Exactly **6px**, on interactive controls only: chips, indicator buttons, differential options, inputs, textareas, the file button, actions. **Square everywhere else** — masthead, rules, queue rows, definition rows, drawings, photographs, metadata tags, panels. The editorial identity lives in paper, type, rules and restrained colour; none of it required sharp buttons.
+
+**Typography, to reviewed values** (see UX_REVIEW_GPT.md §2 for the table): Bodoni confined to the masthead and page titles — a display face at 20px is just a small display face and costs readability for nothing; section headings become Archivo 20/26; field questions become **prose** (Archivo 16/22 sentence case) instead of tracked-out mono labels; body to 16/24; hints from 12px up to 14/20; action labels from 13px uppercase at 0.18em tracking to Archivo 15/20 sentence case; reviewer inputs to 16px, **below which iOS zooms on focus**.
+
+**Other accepted findings:**
+- **"One quick check" could be three.** Ticking sheen + foam + green growth produced three questions under a heading promising one. Now counted honestly.
+- **Red was leaking.** The "While you're still there" kicker and generic network errors both wore `#b02d18` — the colour reserved for citizen safety — contradicting our own rule. Errors are now ink, headed "Could not save", with a retry.
+- **A failed save destroyed the reviewer's work.** The error branch replaced the whole detail view including a typed-but-unsaved assessment. It now keeps the text and says so.
+- **No pending state or double-click guard** on the central clarification path. Added.
+- **The paper texture was invisible** — painted at z-index 0 beneath an opaque app root. Moved above content at 4%, over opaque reading surfaces.
+- **Keyboard focus landed on the `sr-only` radio**, so it could not be seen. Ring moved to the visible chip.
+- **Control borders lightened to invisibility** at `#cdc5b4`. Interactive controls now use `#6d6354`; the pale rule stays for decorative dividers.
+- Report/Review/Back raised to 44px targets; selected indicators carry a non-colour tick; original answers render through protocol labels rather than raw identifiers.
+
+**Deferred as explicitly not submission blockers** (its ranking, which I followed): queue search, alternate sorting, a pre-send summary screen. *"Square corners, absence of search and lack of a decorative progress percentage are much less consequential"* than a citizen leaving before answering or a reviewer losing their work.
+
 ---
 
 ## 2. Implementation plan — REVISED per D-013 (real dates, ethical core first)
@@ -724,6 +748,7 @@ credible delivery; not the most elaborate architecture, and never guessed entran
 |---|---|---|
 | 2026-09-14 21:55 CEST | Claude (Opus 5) | File created. D-001…D-009 recorded. Track 3 selected over owner's initial Track 2 preference, with reversal path D-003. |
 | 2026-09-14 22:05 CEST | Codex (GPT) via `duet` | Adversarial strategy review, run `20260914-215657-dbebe6`. Verdict **revise**, 8 findings. Earlier run `20260914-215306-6baadf` discarded (inverted roles, placeholder output). |
+| 2026-09-15 10:30 CEST | Claude (Opus 5) | **D-030** refinement pass on GPT's UX review. 6px corners on controls only; full type scale reset (Bodoni confined to masthead/titles, questions become prose, 16px inputs). Fixed a **correction flow that collected no correction**, a heading promising one question when it asked three, red leaking onto non-safety UI, a failed save wiping the reviewer's typed assessment, invisible keyboard focus, and a paper texture painted beneath an opaque root. |
 | 2026-09-15 09:15 CEST | Claude (Opus 5) | **D-029** owner reported the built app looked plain — correct: the drawings only appeared after submitting, so the first screen was ten text rectangles. Illustration moved to the capture picker (10 drawn indicator marks), clamp-scaled display type, IBM Plex Mono for the metadata layer, one fixed paper-texture layer. Gradients/glassmorphism explicitly rejected and recorded in the CSS. |
 | 2026-09-15 07:40 CEST | Claude (Opus 5) | **D-028** owner chose **Broadsheet**. Design system tokenised; specimens ported to React and extended to the sheen and foam differentials; reviewer-surface guardrails fixed (urgency never wears the precaution red, the three dimensions stay separate and text-labelled, no black panels per queue row). |
 | 2026-09-15 07:00 CEST | Claude (Opus 5) | **D-027** recommendation reversed to **Broadsheet** after Codex picked it and rejected Cyanotype. Decisive: the options name colours and every direction drew them in one ink — and a cyanotype is monochrome by process, so its concept forbids the most diagnostic feature. Specimens now coloured. Five corrections applied. A 16px body pushed the artboard 89px over frame and clipped the safety copy; caught by measuring in-browser, fixed to exactly 844. |

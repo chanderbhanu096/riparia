@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { submitObservation, clarify, getProtocol } from './api'
 import Specimen, { IndicatorMark } from './Specimens'
 
-// Context questions only. The indicator list is NOT hardcoded here -- it comes from
-// /api/protocol, served from the backend's field_protocol module, so ecological
-// content has exactly one home (AUDIT.md D-021).
+// Context questions only. The indicator list comes from /api/protocol, served from
+// the backend's field_protocol module, so ecological content has one home (D-021).
 const CONTEXT = [
   { id: 'water_clarity', label: 'How clear is the water?',
     options: [['clear', 'Clear'], ['slightly_cloudy', 'Slightly cloudy'],
@@ -15,14 +14,30 @@ const CONTEXT = [
     options: [['park', 'Park or green space'], ['residential', 'Houses'],
               ['industrial', 'Industrial'], ['agricultural', 'Farmland'], ['mixed', 'A mix']] },
 ]
+const CONTEXT_BY_ID = Object.fromEntries(CONTEXT.map(q => [q.id, q]))
 
-const Kicker = ({ children, tone = 'muted' }) => (
-  <div className={`text-[12px] font-bold uppercase tracking-[0.18em] ${
-    tone === 'alarm' ? 'text-alarm' : 'text-faint'}`}>{children}</div>
-)
+const R = 'rounded-[6px]'          // controls only -- never rows, rules or panels
+const CTRL = `${R} border border-edge bg-surface`
+
+// A failure to reach the server is not a safety warning. Red is reserved for the
+// citizen precaution (index.css, AUDIT.md D-028), so errors are ink with a retry.
+function Problem({ children, onRetry }) {
+  return (
+    <div role="alert" className={`${R} border-2 border-ink bg-surface p-3.5`}>
+      <p className="question">Could not save that</p>
+      <p className="body-2 mt-1 text-muted text-pretty">{children}</p>
+      {onRetry && (
+        <button onClick={onRetry} className={`action mt-2.5 ${R} bg-ink px-4 py-2 text-ground`}>
+          Try again
+        </button>
+      )}
+    </div>
+  )
+}
 
 export default function Capture({ onDone }) {
   const [protocol, setProtocol] = useState(null)
+  const [protocolError, setProtocolError] = useState(null)
   const [answers, setAnswers] = useState({ indicators: [] })
   const [photo, setPhoto] = useState(null)
   const [preview, setPreview] = useState(null)
@@ -31,7 +46,10 @@ export default function Capture({ onDone }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
 
-  useEffect(() => { getProtocol().then(setProtocol).catch(e => setError(e.message)) }, [])
+  const loadProtocol = () =>
+    getProtocol().then(p => { setProtocol(p); setProtocolError(null) })
+                 .catch(e => setProtocolError(e.message))
+  useEffect(() => { loadProtocol() }, [])
 
   const set = (k, v) => setAnswers(a => ({ ...a, [k]: v }))
   const toggle = v => setAnswers(a => ({
@@ -54,30 +72,28 @@ export default function Capture({ onDone }) {
   return (
     <div className="space-y-9">
       <div>
-        <div className="meta text-faint">Step one</div>
+        <div className="meta meta-stage text-faint">Step one</div>
         <h2 className="display-1 mt-2 text-pretty">Report a stream</h2>
-        <p className="measure mt-3 text-[16px] leading-[24px] text-muted text-pretty">
+        <p className="measure body-1 mt-3 text-muted text-pretty">
           Answer what you can see. <strong className="font-semibold text-ink">“Not
           sure” is always a valid answer</strong> — it is more useful to us than a guess.
         </p>
       </div>
 
-      <Field label="Which stream or reach is this?">
-        <input value={siteName} onChange={e => setSiteName(e.target.value)}
+      <Field label="Which stream or reach is this?" htmlFor="site">
+        <input id="site" value={siteName} onChange={e => setSiteName(e.target.value)}
           placeholder="e.g. Mondego tributary, by the footbridge"
-          className="w-full border border-rule bg-surface px-4 py-3 text-[16px]
-                     placeholder:text-faint focus:border-ink" />
+          className={`${CTRL} body-1 w-full px-4 py-3 placeholder:text-faint focus:border-ink`} />
       </Field>
 
-      <Field label="Photo of the stream">
-        <input type="file" accept="image/*" capture="environment"
+      <Field label="Photo of the stream" htmlFor="photo">
+        <input id="photo" type="file" accept="image/*" capture="environment"
           onChange={e => {
             const f = e.target.files?.[0] || null
             setPhoto(f); setPreview(f ? URL.createObjectURL(f) : null)
           }}
-          className="block w-full text-[14px] file:mr-3 file:border-0 file:bg-ink
-                     file:px-4 file:py-2.5 file:text-[13px] file:font-semibold
-                     file:uppercase file:tracking-[0.1em] file:text-ground" />
+          className={`body-2 block w-full file:mr-3 file:${R} file:border-0 file:bg-ink
+                      file:px-4 file:py-3 file:text-[15px] file:font-semibold file:text-ground`} />
         {preview && <img src={preview} alt="The stream you photographed"
           className="mt-3 max-h-60 border border-rule" />}
       </Field>
@@ -90,47 +106,60 @@ export default function Capture({ onDone }) {
       ))}
 
       <fieldset>
-        <legend className="display-2 text-pretty">Did you notice any of these?</legend>
-        <p className="measure mt-2 text-[15px] leading-[22px] text-muted text-pretty">
+        <legend className="heading-2 text-pretty">Did you notice any of these?</legend>
+        <p className="measure body-1 mt-2 text-muted text-pretty">
           Tick any that apply. Ticking none is a real answer — it means you looked.
         </p>
+
+        {protocolError && (
+          <div className="mt-4">
+            <Problem onRetry={loadProtocol}>
+              The list of things to look for could not be loaded, so it is not shown.
+              You can still send what you have.
+            </Problem>
+          </div>
+        )}
+        {!protocol && !protocolError && (
+          <p role="status" className="body-2 mt-4 text-muted">Loading the checklist…</p>
+        )}
+
         <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
           {(protocol?.indicators || []).map(ind => {
             const on = answers.indicators.includes(ind.key)
             return (
               <button key={ind.key} type="button" aria-pressed={on}
                 onClick={() => toggle(ind.key)}
-                className={`lift flex min-h-[64px] items-center gap-3.5 border px-3.5 py-3
+                className={`lift ${R} flex min-h-[64px] items-center gap-3.5 border px-3.5 py-3
                             text-left ${on
                     ? 'border-ink bg-ink text-ground'
-                    : 'border-rule bg-surface text-ink hover:border-ink'}`}>
+                    : 'border-edge bg-surface text-ink hover:border-ink'}`}>
                 <span className={on ? 'text-ground' : 'text-muted'}>
                   <IndicatorMark indicator={ind.key} size={38} />
                 </span>
-                <span className="text-[15px] leading-[20px] font-medium">{ind.label}</span>
+                <span className="body-1 font-medium">{ind.label}</span>
+                {/* a cue that survives forced colours and greyscale, not colour alone */}
+                <span aria-hidden="true"
+                      className={`meta ml-auto shrink-0 ${on ? 'text-ground' : 'invisible'}`}>✓</span>
               </button>
             )
           })}
         </div>
         {protocol && (
-          <p className="measure mt-3 text-[13px] leading-[19px] text-faint text-pretty">{protocol.note}</p>
+          <p className="measure body-2 mt-3 text-faint text-pretty">{protocol.note}</p>
         )}
       </fieldset>
 
-      <Field label="Anything else worth knowing?">
-        <textarea rows={3} value={answers.wildlife_seen || ''}
+      <Field label="Anything else worth knowing?" htmlFor="notes">
+        <textarea id="notes" rows={3} value={answers.wildlife_seen || ''}
           onChange={e => set('wildlife_seen', e.target.value)}
           placeholder="Wildlife you saw, or anything that struck you as unusual"
-          className="w-full border border-rule bg-surface px-4 py-3 text-[16px]
-                     placeholder:text-faint focus:border-ink" />
+          className={`${CTRL} body-1 w-full px-4 py-3 placeholder:text-faint focus:border-ink`} />
       </Field>
 
-      {error && <p role="alert" className="border-2 border-alarm bg-alarm-bg px-3 py-2.5
-                                           text-[14px] text-alarm">{error}</p>}
+      {error && <Problem onRetry={send}>{error}</Problem>}
 
       <button onClick={send} disabled={busy}
-        className="lift w-full bg-ink px-4 py-4 text-[13px] font-bold uppercase
-                   tracking-[0.18em] text-ground disabled:opacity-60">
+        className={`lift ${R} action w-full bg-ink px-4 py-4 text-ground disabled:opacity-60`}>
         {busy ? 'Sending…' : 'Send observation'}
       </button>
     </div>
@@ -140,89 +169,54 @@ export default function Capture({ onDone }) {
 function Submitted({ result, onDone }) {
   const [data, setData] = useState({ assessment: result.assessment })
   const [answered, setAnswered] = useState({})
-  // Frozen at first render: answering a question correctly removes it from the
-  // refreshed assessment, so re-deriving the list would delete the question and its
-  // own answer from the screen.
+  // Frozen at first render: answering a question removes it from the refreshed
+  // assessment, so re-deriving would delete the question and its own answer.
   const [diffs] = useState(result.assessment.field_differentials || [])
   const tensions = result.assessment.detected_inconsistency || []
   const urgency = data.assessment.ecological_urgency
+  const heading = useRef(null)
 
-  async function answerDifferential(q, option) {
-    const fresh = await clarify(result.id, {
-      questionId: q.id, question: q.question, field: q.field,
-      response: option.label, disagrees: false,
-      indicator: q.indicator, optionKey: option.key,
-    })
-    const r = fresh.assessment.ecological_urgency.resolved?.[q.indicator]
-    setAnswered(a => ({ ...a, [q.id]: {
-      explain: r?.explain || 'Recorded.', urgency: r?.urgency, oneHealth: r?.one_health,
-    } }))
-    setData(fresh)
-  }
+  // Move focus to the new heading so a keyboard or screen-reader user is not left
+  // at the top of a page that has entirely changed (UX_REVIEW_GPT.md F6).
+  useEffect(() => { heading.current?.focus() }, [])
+
+  const n = diffs.length
+  const checkTitle = n === 1 ? 'One quick check' : `${n} quick checks`
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="border-b-[3px] border-ink pb-3">
-        <h2 className="font-display text-[26px] leading-[29px] font-bold">Recorded</h2>
-        <p className="mt-1.5 text-[15px] leading-[21px] text-muted text-pretty">
+        <h2 ref={heading} tabIndex={-1} className="display-1 outline-none">Recorded</h2>
+        <p className="measure body-1 mt-2 text-muted text-pretty">
           Sent for review by a person. Nothing here is decided automatically.
         </p>
       </div>
 
       {/* Model-unavailable state (AUDIT.md A4/D-013): degraded, never dropped. */}
       {result.notice && (
-        <p role="status" className="border border-rule bg-surface px-3.5 py-3
-                                    text-[14px] leading-[20px] text-muted text-pretty">
+        <p role="status" className="measure body-2 border border-rule bg-surface px-3.5 py-3
+                                    text-muted text-pretty">
           {result.notice}
         </p>
       )}
 
-      {diffs.length > 0 && (
+      {n > 0 && (
         <section className="space-y-3">
           <div>
-            <Kicker tone="alarm">While you're still there</Kicker>
-            <h3 className="mt-1.5 font-display text-[22px] leading-[25px] font-bold text-pretty">
-              One quick check
-            </h3>
-            <p className="mt-1.5 text-[14.5px] leading-[20px] text-muted text-pretty">
+            {/* ink, not red: this is a prompt, not a safety warning (F7) */}
+            <div className="meta meta-stage text-faint">While you're still there</div>
+            <h3 className="heading-2 mt-1.5 text-pretty">{checkTitle}</h3>
+            <p className="measure body-1 mt-1.5 text-muted text-pretty">
               These are the questions a river surveyor would ask on site. You can see
               what we can't, so you're the one who can answer them.
             </p>
           </div>
           {diffs.map(q => (
-            <div key={q.id} className="border border-rule bg-surface p-4">
-              <p className="text-[15px] leading-[21px] text-pretty">{q.question}</p>
-              {answered[q.id] ? (
-                <div className="mt-3 space-y-2">
-                  <p className={`border-l-[3px] py-2 pl-3 text-[14px] leading-[20px] text-pretty
-                    ${answered[q.id].urgency === 'high'
-                      ? 'border-ochre bg-ochre-bg text-ink' : 'border-rule text-muted'}`}>
-                    {answered[q.id].explain}
-                  </p>
-                  {answered[q.id].oneHealth && (
-                    <p className="border-2 border-alarm bg-alarm-bg p-3 text-[15px]
-                                  leading-[21px] text-pretty">
-                      <span className="font-bold text-alarm">For you and anyone with you.</span>{' '}
-                      {answered[q.id].oneHealth}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="mt-3 flex flex-col gap-2">
-                  {q.options.map(o => (
-                    <button key={o.key} onClick={() => answerDifferential(q, o)}
-                      className="flex min-h-11 items-center gap-3 border border-rule
-                                 bg-surface px-3 py-2.5 text-left hover:border-ink">
-                      <Specimen differential={q.id} option={o.key} size={52}
-                                alt={`Schematic drawing: ${o.label}`} />
-                      <span className="text-[15px] leading-[20px]">{o.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <Differential key={q.id} q={q} id={result.id}
+              done={answered[q.id]}
+              onDone={(info, fresh) => { setAnswered(a => ({ ...a, [q.id]: info })); setData(fresh) }} />
           ))}
-          <p className="text-[12px] leading-[16px] text-faint">
+          <p className="body-2 text-faint">
             Drawings are schematic aids, not identification plates.
           </p>
         </section>
@@ -230,10 +224,8 @@ function Submitted({ result, onDone }) {
 
       {tensions.length > 0 && (
         <section className="space-y-3">
-          <h3 className="font-display text-[20px] leading-[24px] font-bold">
-            One thing we'd like to check
-          </h3>
-          <p className="text-[14px] leading-[20px] text-muted text-pretty">
+          <h3 className="heading-2">One thing we'd like to check</h3>
+          <p className="measure body-1 text-muted text-pretty">
             These are questions, not corrections. You were there and we weren't —
             keeping your original answer is a perfectly good response.
           </p>
@@ -242,56 +234,168 @@ function Submitted({ result, onDone }) {
       )}
 
       <section className="border-t-[3px] border-ink pt-3">
-        <div className="flex items-baseline justify-between gap-3">
-          <h3 className="font-display text-[19px] leading-[23px] font-bold text-pretty">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h3 className="heading-2 text-pretty">
             {urgency.level === 'high' ? 'Worth a prompt look' : 'What happens next'}
           </h3>
-          <span className="shrink-0 whitespace-nowrap text-[11.5px] font-bold uppercase
-                           tracking-[0.16em] text-faint">Awaiting review</span>
+          <span className="meta meta-stage shrink-0 text-faint">Awaiting human review</span>
         </div>
-        <ul className="mt-2 space-y-1.5">
+        <ul className="measure mt-2 space-y-1.5">
           {urgency.reasons.map((r, i) => (
-            <li key={i} className="text-[14.5px] leading-[20px] text-muted text-pretty">{r}</li>
+            <li key={i} className="body-1 text-muted text-pretty">{r}</li>
           ))}
         </ul>
       </section>
 
       <button onClick={onDone}
-        className="w-full border-2 border-ink px-4 py-3 text-[13px] font-bold
-                   uppercase tracking-[0.16em] text-ink">
+        className={`lift ${R} action w-full border-2 border-ink px-4 py-3.5 text-ink`}>
         Report another stream
       </button>
     </div>
   )
 }
 
-function TensionCard({ id, tension }) {
-  const [state, setState] = useState(null)
-  async function respond(response, disagrees) {
-    await clarify(id, {
-      questionId: tension.id, question: tension.question, field: tension.field,
-      response, disagrees,
-    })
-    setState(disagrees ? 'kept' : 'updated')
+function Differential({ q, id, done, onDone }) {
+  const [saving, setSaving] = useState(null)
+  const [error, setError] = useState(null)
+
+  async function pick(option) {
+    if (saving) return                       // no double submits on a flaky connection
+    setSaving(option.key); setError(null)
+    try {
+      const fresh = await clarify(id, {
+        questionId: q.id, question: q.question, field: q.field,
+        response: option.label, disagrees: false,
+        indicator: q.indicator, optionKey: option.key,
+      })
+      const r = fresh.assessment.ecological_urgency.resolved?.[q.indicator]
+      onDone({ explain: r?.explain || 'Recorded.', urgency: r?.urgency,
+               oneHealth: r?.one_health }, fresh)
+    } catch (e) { setError(e.message) } finally { setSaving(null) }
   }
+
   return (
     <div className="border border-rule bg-surface p-4">
-      <p className="text-[15px] leading-[21px] text-pretty">{tension.question}</p>
-      {state ? (
-        <p className="mt-2.5 text-[14px] leading-[20px] text-muted text-pretty">
+      <p className="question text-pretty">{q.question}</p>
+      {done ? (
+        <div className="mt-3 space-y-2" role="status">
+          <p className={`body-1 border-l-[3px] py-2 pl-3 text-pretty ${
+            done.urgency === 'high' ? 'border-ochre bg-ochre-bg text-ink'
+                                    : 'border-rule text-muted'}`}>
+            {done.explain}
+          </p>
+          {done.oneHealth && (
+            <p className="body-1 border-2 border-alarm bg-alarm-bg p-3 text-pretty">
+              <span className="font-bold text-alarm">For you and anyone with you.</span>{' '}
+              {done.oneHealth}
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="mt-3 flex flex-col gap-2">
+          {q.options.map(o => (
+            <button key={o.key} onClick={() => pick(o)} disabled={Boolean(saving)}
+              className={`lift ${R} flex min-h-11 items-center gap-3 border border-edge
+                          bg-surface px-3 py-2.5 text-left hover:border-ink
+                          disabled:opacity-60`}>
+              <Specimen differential={q.id} option={o.key} size={52} />
+              <span className="body-1">{o.label}</span>
+              {saving === o.key && <span className="meta ml-auto text-faint">Saving…</span>}
+            </button>
+          ))}
+          {error && <Problem onRetry={() => setError(null)}>{error}</Problem>}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// A question about something the citizen already answered. "Let me update that" must
+// actually COLLECT a new answer -- an earlier version stored the sentence "Citizen
+// updated their answer after review" and told them their update had been saved, when
+// nothing had been. A correction containing no correction is worse than no
+// correction at all (UX_REVIEW_GPT.md F3).
+function TensionCard({ id, tension }) {
+  const [state, setState] = useState('idle')   // idle | editing | saving | kept | updated
+  const [saved, setSaved] = useState('')
+  const [text, setText] = useState('')
+  const [error, setError] = useState(null)
+  const field = CONTEXT_BY_ID[tension.field]
+
+  async function send(response, disagrees) {
+    if (state === 'saving') return
+    setState('saving'); setError(null)
+    try {
+      await clarify(id, {
+        questionId: tension.id, question: tension.question, field: tension.field,
+        response, disagrees,
+      })
+      setSaved(response)
+      setState(disagrees ? 'kept' : 'updated')
+    } catch (e) { setError(e.message); setState('editing') }
+  }
+
+  if (state === 'kept' || state === 'updated') {
+    return (
+      <div className="border border-rule bg-surface p-4" role="status">
+        <p className="question text-pretty">{tension.question}</p>
+        <p className="body-1 mt-2 text-muted text-pretty">
           {state === 'kept'
             ? 'Recorded — your original answer stands, and the reviewer will see you confirmed it.'
-            : 'Recorded — your update sits alongside your original answer.'}
+            : 'Recorded, alongside your original answer:'}
         </p>
-      ) : (
+        {state === 'updated' && (
+          <p className="body-1 mt-1 font-semibold text-pretty">“{saved}”</p>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="border border-rule bg-surface p-4">
+      <p className="question text-pretty">{tension.question}</p>
+
+      {state === 'idle' ? (
         <div className="mt-3 flex flex-wrap gap-2">
-          <button onClick={() => respond('Citizen updated their answer after review', false)}
-            className="min-h-11 bg-ink px-3.5 py-2 text-[13px] font-semibold text-ground">
+          <button onClick={() => setState('editing')}
+            className={`lift ${R} action min-h-11 bg-ink px-4 py-2.5 text-ground`}>
             Let me update that
           </button>
-          <button onClick={() => respond('Citizen confirmed their original answer', true)}
-            className="min-h-11 border-2 border-ink px-3.5 py-2 text-[13px] font-semibold text-ink">
+          <button onClick={() => send('Citizen confirmed their original answer', true)}
+            className={`lift ${R} action min-h-11 border-2 border-ink px-4 py-2.5 text-ink`}>
             I'll keep my answer
+          </button>
+        </div>
+      ) : (
+        <div className="mt-3 space-y-2">
+          <p className="meta meta-stage text-faint">Your new answer</p>
+          {field ? (
+            <div className="flex flex-wrap gap-2">
+              {[...field.options, ['unsure', 'Not sure']].map(([v, l]) => (
+                <button key={v} onClick={() => send(l, false)} disabled={state === 'saving'}
+                  className={`lift ${R} body-1 min-h-11 border border-edge bg-surface px-4
+                              py-2.5 hover:border-ink disabled:opacity-60`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-start gap-2">
+              <input value={text} onChange={e => setText(e.target.value)}
+                placeholder="What should it say instead?"
+                className={`${CTRL} body-1 min-w-0 flex-1 px-4 py-2.5 placeholder:text-faint
+                            focus:border-ink`} />
+              <button onClick={() => send(text.trim(), false)}
+                disabled={!text.trim() || state === 'saving'}
+                className={`lift ${R} action min-h-11 bg-ink px-4 py-2.5 text-ground
+                            disabled:opacity-60`}>
+                {state === 'saving' ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          )}
+          {error && <Problem>{error}</Problem>}
+          <button onClick={() => setState('idle')} className="body-2 text-muted underline">
+            Cancel
           </button>
         </div>
       )}
@@ -299,10 +403,12 @@ function TensionCard({ id, tension }) {
   )
 }
 
-function Field({ label, children }) {
+function Field({ label, htmlFor, children }) {
   return (
     <fieldset className="space-y-2.5">
-      <legend className="meta text-faint">{label}</legend>
+      <legend className="meta meta-stage text-faint">
+        {htmlFor ? <label htmlFor={htmlFor}>{label}</label> : label}
+      </legend>
       {children}
     </fieldset>
   )
@@ -313,9 +419,9 @@ function Choices({ name, value, onChange, options }) {
     <div className="flex flex-wrap gap-2">
       {options.map(([v, l]) => (
         <label key={v}
-          className={`lift min-h-11 cursor-pointer border px-4 py-2.5 text-[15px] leading-[20px]
+          className={`chip lift ${R} body-1 min-h-11 cursor-pointer border px-4 py-2.5
             ${value === v ? 'border-ink bg-ink text-ground font-medium'
-                          : 'border-rule bg-surface text-ink hover:border-ink'}
+                          : 'border-edge bg-surface text-ink hover:border-ink'}
             ${v === 'unsure' ? 'italic' : ''}`}>
           <input type="radio" name={name} value={v} checked={value === v}
             onChange={() => onChange(v)} className="sr-only" />

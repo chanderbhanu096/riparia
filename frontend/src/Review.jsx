@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { getQueue, getObservation, submitReview } from './api'
+import { getQueue, getObservation, submitReview, getProtocol } from './api'
+
+const R = 'rounded-[6px]'   // controls only
 
 // The reviewer surfaces are an information system, not a newspaper (AUDIT.md D-028).
 // Bodoni appears on the page title and nowhere else; rows are hairline-ruled and
@@ -30,14 +32,16 @@ const STATUS = {
 const pretty = k => k.replace(/_/g, ' ')
 
 const Label = ({ children }) => (
-  <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-faint">{children}</span>
+  <span className="meta meta-stage text-faint">{children}</span>
+)
+const Value = ({ children, className = '' }) => (
+  <span className={`meta ${className}`}>{children}</span>
 )
 
 // D-015: the three record classes stay visibly separate, everywhere. A judge must
 // never have to wonder whether a record on screen is real.
 const ClassTag = ({ cls }) => cls === 'authentic' ? null : (
-  <span className="border border-rule px-1.5 py-0.5 text-[11px] font-semibold
-                   uppercase tracking-[0.1em] text-faint">
+  <span className="meta meta-stage border border-rule px-1.5 py-0.5 text-faint">
     {cls === 'synthetic' ? 'simulated' : 'evaluation case'}
   </span>
 )
@@ -50,15 +54,22 @@ export default function Review() {
   const load = () => getQueue().then(setQueue).catch(e => setError(e.message))
   useEffect(() => { load() }, [])
 
-  if (error) return <p role="alert" className="border-2 border-alarm bg-alarm-bg px-3 py-2.5 text-alarm">{error}</p>
-  if (!queue) return <p className="text-muted">Loading queue…</p>
+  if (error) return (
+    <div role="alert" className={`${R} border-2 border-ink bg-surface p-4`}>
+      <p className="heading-2">Could not load the queue</p>
+      <p className="body-2 mt-1 text-muted">{error}</p>
+      <button onClick={() => { setError(null); load() }}
+        className={`action mt-3 ${R} min-h-11 bg-ink px-4 py-2.5 text-ground`}>Try again</button>
+    </div>
+  )
+  if (!queue) return <p role="status" className="body-1 text-muted">Loading queue…</p>
   if (openId) return <Detail id={openId} onBack={() => { setOpenId(null); load() }} />
 
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="font-display text-[28px] leading-[30px] font-bold">Review queue</h2>
-        <p className="mt-2 text-[15px] leading-[21px] text-muted text-pretty">
+        <h2 className="display-1">Review queue</h2>
+        <p className="measure body-1 mt-3 text-muted text-pretty">
           Ordered by what a review could change, not by arrival time. An uncertain
           report of something serious sits above a tidy report of nothing much,
           because that is where your time changes an outcome.
@@ -66,7 +77,7 @@ export default function Review() {
       </div>
 
       {queue.items.length === 0 && (
-        <p className="border border-rule bg-surface px-4 py-3 text-[15px] text-muted">
+        <p role="status" className="body-1 border border-rule bg-surface px-4 py-3 text-muted">
           Nothing waiting. Submit an observation first.
         </p>
       )}
@@ -86,28 +97,19 @@ export default function Review() {
                 <span className={`mt-2 h-2.5 w-2.5 shrink-0 ${c.dot}`} aria-hidden="true" />
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-baseline gap-2">
-                    <span className="text-[16px] font-semibold leading-[21px]">
+                    <span className="body-1 font-semibold">
                       {i.site_name || 'Unnamed reach'}
                     </span>
                     <ClassTag cls={i.record_class} />
                   </span>
-                  <span className="mt-1 block text-[13.5px] leading-[19px] text-muted text-pretty">
+                  <span className="measure body-2 mt-1 block text-muted text-pretty">
                     {a.triage.rationale}
                   </span>
                   {/* three separate, labelled facts -- never one merged badge */}
                   <span className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
-                    <span className="text-[12.5px] leading-[17px]">
-                      <Label>Potential consequence</Label>{' '}
-                      <span className={c.text}>{c.label}</span>
-                    </span>
-                    <span className="text-[12.5px] leading-[17px]">
-                      <Label>Open points</Label>{' '}
-                      <span className="text-muted">{open || 'none'}</span>
-                    </span>
-                    <span className="text-[12.5px] leading-[17px]">
-                      <Label>Status</Label>{' '}
-                      <span className="text-muted">{STATUS[i.review_status]}</span>
-                    </span>
+                    <span><Label>Potential consequence</Label>{' '}<Value className={c.text}>{c.label}</Value></span>
+                    <span><Label>Open points</Label>{' '}<Value className="text-muted">{open || 'none'}</Value></span>
+                    <span><Label>Status</Label>{' '}<Value className="text-muted">{STATUS[i.review_status]}</Value></span>
                   </span>
                 </span>
               </button>
@@ -125,36 +127,44 @@ function Detail({ id, onBack }) {
   const [decision, setDecision] = useState('')
   const [note, setNote] = useState('')
   const [error, setError] = useState(null)
+  const [savingReview, setSavingReview] = useState(false)
+  const [protocol, setProtocol] = useState(null)
 
   useEffect(() => { getObservation(id).then(setData).catch(e => setError(e.message)) }, [id])
-  if (error) return <p role="alert" className="border-2 border-alarm bg-alarm-bg px-3 py-2.5 text-alarm">{error}</p>
-  if (!data) return <p className="text-muted">Loading…</p>
+  useEffect(() => { getProtocol().then(setProtocol).catch(() => {}) }, [])
+  if (!data) return <p role="status" className="body-1 text-muted">Loading…</p>
 
   const { observation: o, assessment: a } = data
   const u = a.ecological_urgency
   const c = CONSEQUENCE[u.level]
   const resolved = Object.entries(u.resolved || {})
 
+  // A failed save must never take the reviewer's typed assessment with it.
   async function save() {
+    if (savingReview) return
+    setSavingReview(true); setError(null)
     try { setData(await submitReview(id, { reviewer, decision, note })) }
-    catch (e) { setError(e.message) }
+    catch (e) { setError(e.message) } finally { setSavingReview(false) }
   }
+
+  // Indicator keys are internal ids; show the words the citizen actually saw.
+  const indicatorLabel = k =>
+    protocol?.indicators?.find(i => i.key === k)?.label || pretty(k)
 
   return (
     <div className="space-y-6">
-      <button onClick={onBack} className="text-[13px] font-semibold uppercase
-                                          tracking-[0.14em] text-muted hover:text-ink">
+      <button onClick={onBack}
+        className="meta meta-stage -ml-2 inline-flex min-h-11 items-center px-2 text-muted
+                   hover:text-ink">
         ← Back to queue
       </button>
 
       <div className="border-b-[3px] border-ink pb-3">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="font-display text-[26px] leading-[29px] font-bold">
-            {o.site_name || 'Unnamed reach'}
-          </h2>
+          <h2 className="display-1">{o.site_name || 'Unnamed reach'}</h2>
           <ClassTag cls={o.record_class} />
         </div>
-        <p className="mt-2 text-[14.5px] leading-[20px] text-muted text-pretty">
+        <p className="measure body-1 mt-2.5 text-muted text-pretty">
           <Label>Why this is in front of you</Label> {a.triage.rationale}
         </p>
       </div>
@@ -218,7 +228,7 @@ function Detail({ id, onBack }) {
 
       {resolved.length > 0 && (
         <section>
-          <h3 className="font-display text-[19px] leading-[23px] font-bold">
+          <h3 className="heading-2">
             What the citizen's field answers resolved
           </h3>
           <ul className="mt-2 border-t border-rule">
@@ -275,7 +285,7 @@ function Detail({ id, onBack }) {
       )}
 
       <section>
-        <h3 className="font-display text-[19px] leading-[23px] font-bold">
+        <h3 className="heading-2">
           What the citizen reported
         </h3>
         <div className="mt-2 grid gap-4 sm:grid-cols-2">
@@ -286,7 +296,9 @@ function Detail({ id, onBack }) {
                 <div key={k} className="flex gap-2 text-[14px] leading-[20px]">
                   <dt className="text-muted">{pretty(k)}:</dt>
                   <dd className="font-medium">
-                    {Array.isArray(v) ? (v.join(', ') || 'none selected') : String(v)}
+                    {Array.isArray(v)
+                      ? (v.map(indicatorLabel).join(', ') || 'none selected')
+                      : String(v)}
                   </dd>
                 </div>
               ))}
@@ -314,35 +326,41 @@ function Detail({ id, onBack }) {
       </section>
 
       <section className="border-t-[3px] border-ink pt-4">
-        <h3 className="font-display text-[19px] leading-[23px] font-bold">Your assessment</h3>
+        <h3 className="heading-2">Your assessment</h3>
         <p className="mt-1.5 text-[14px] leading-[20px] text-muted text-pretty">
           Recorded as your attributed judgement, with your name against it — not as
           ground truth. Another reviewer may reach a different conclusion.
         </p>
         <div className="mt-3 space-y-3">
           <label className="block">
-            <span className="text-[14px] font-semibold">Your name and role</span>
+            <span className="body-1 font-semibold">Your name and role</span>
             <input value={reviewer} onChange={e => setReviewer(e.target.value)}
               placeholder="e.g. A. Ferreira, freshwater ecology"
-              className="mt-1 w-full border border-rule bg-surface px-3 py-2.5 text-[15px]
-                         placeholder:text-faint" />
+              className={`mt-1.5 w-full ${R} border border-edge bg-surface px-4 py-3 body-1
+                          placeholder:text-faint focus:border-ink`} />
           </label>
           <label className="block">
-            <span className="text-[14px] font-semibold">Decision</span>
+            <span className="body-1 font-semibold">Decision</span>
             <input value={decision} onChange={e => setDecision(e.target.value)}
               placeholder="e.g. escalate for site visit / usable as reported / needs resampling"
-              className="mt-1 w-full border border-rule bg-surface px-3 py-2.5 text-[15px]
-                         placeholder:text-faint" />
+              className={`mt-1.5 w-full ${R} border border-edge bg-surface px-4 py-3 body-1
+                          placeholder:text-faint focus:border-ink`} />
           </label>
           <label className="block">
-            <span className="text-[14px] font-semibold">Reasoning</span>
+            <span className="body-1 font-semibold">Reasoning</span>
             <textarea rows={3} value={note} onChange={e => setNote(e.target.value)}
-              className="mt-1 w-full border border-rule bg-surface px-3 py-2.5 text-[15px]" />
+              className={`mt-1.5 w-full ${R} border border-edge bg-surface px-4 py-3 body-1
+                          focus:border-ink`} />
           </label>
-          <button onClick={save} disabled={!reviewer.trim() || !decision.trim()}
-            className="min-h-11 bg-ink px-5 py-2.5 text-[13px] font-bold uppercase
-                       tracking-[0.16em] text-ground disabled:opacity-60">
-            Record my assessment
+          {error && (
+            <div role="alert" className={`${R} border-2 border-ink bg-surface p-3.5`}>
+              <p className="question">Could not save your assessment</p>
+              <p className="body-2 mt-1 text-muted">{error} — your text above has been kept.</p>
+            </div>
+          )}
+          <button onClick={save} disabled={!reviewer.trim() || !decision.trim() || savingReview}
+            className={`lift ${R} action min-h-11 bg-ink px-5 py-3 text-ground disabled:opacity-60`}>
+            {savingReview ? 'Saving…' : 'Record my assessment'}
           </button>
         </div>
       </section>

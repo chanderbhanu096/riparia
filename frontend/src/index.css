@@ -13,7 +13,8 @@
   --color-ink:     #15120e;
   --color-muted:   #4a4137;
   --color-faint:   #6d6354;
-  --color-rule:    #cdc5b4;
+  --color-rule:    #cdc5b4;  /* decorative dividers only */
+  --color-edge:    #6d6354;  /* interactive control borders -- must read as an edge */
 
   --color-alarm:   #b02d18;  /* the citizen precaution. Nothing else. */
   --color-alarm-bg:#fbf1ee;
@@ -43,6 +44,13 @@ body {
   outline-offset: 2px;
 }
 
+/* A chip's radio input is sr-only, so the browser outlines something invisible and
+   a keyboard user cannot see where they are. Move the ring to the visible label. */
+.chip:has(> input:focus-visible) {
+  outline: 3px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
 /* Respect a reader who has asked for less motion. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
@@ -62,21 +70,21 @@ body {
 
 @theme {
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Controls only. The masthead, rules, queue rows, definition rows, drawings,
+     photographs, metadata tags and panels stay square -- the editorial identity
+     lives in paper, type, rules and restrained colour, not in sharp buttons. */
+  --radius-control: 6px;
 }
 
-/* 1. TYPE AS ARCHITECTURE. Display sizes scale with the viewport so the page has
-      real presence on a laptop instead of being a lonely 15px column. */
+/* 1. TYPE AS ARCHITECTURE, at reviewed sizes (UX_REVIEW_GPT.md F2).
+      Bodoni is the masthead and PAGE TITLES ONLY. Section headings are Archivo:
+      a display face at 20px is just a small display face, and it costs
+      readability for nothing. */
 .display-1 {
   font-family: var(--font-display);
-  font-size: clamp(2.3rem, 5.6vw, 3.6rem);
-  line-height: 0.96;
-  letter-spacing: -0.018em;
-  font-weight: 700;
-}
-.display-2 {
-  font-family: var(--font-display);
-  font-size: clamp(1.45rem, 3vw, 2rem);
-  line-height: 1.08;
+  font-size: clamp(32px, 4vw, 48px);
+  line-height: 1.1;
   letter-spacing: -0.01em;
   font-weight: 700;
 }
@@ -87,33 +95,25 @@ body {
   letter-spacing: 0.06em;
   font-weight: 700;
 }
-/* Long-form copy gets a real measure. */
-.measure { max-width: 62ch; }
+.heading-2 { font-size: 20px; line-height: 26px; font-weight: 600; letter-spacing: 0; }
+/* A question the citizen has to read and answer is prose, not a label. */
+.question  { font-size: 16px; line-height: 22px; font-weight: 600; }
+.body-1    { font-size: 16px; line-height: 24px; }
+.body-2    { font-size: 14px; line-height: 20px; }
+/* Action labels read as words, not as tracked-out signage. */
+.action    { font-size: 15px; line-height: 20px; font-weight: 600; }
+.measure   { max-width: 62ch; }
 
-/* 2. MONOSPACE FOR METADATA. Labels, counts, statuses and record ids -- the
-      utility layer of an observation record. It is where the "crafted" texture
-      comes from, and it separates data from prose at a glance. */
+/* 2. MONOSPACE FOR THE UTILITY LAYER -- counts, statuses, record ids, stage
+      labels. Not prose, and not every field name. */
 .meta {
   font-family: var(--font-mono);
-  font-size: 11.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 12px;
+  line-height: 18px;
+  letter-spacing: 0.04em;
   font-weight: 500;
 }
-
-/* 3. ONE LAYER OF TEXTURE. Paper fibre, fixed so it reads as the sheet the page
-      is printed on rather than something scrolling past. Very low opacity: felt,
-      not seen. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.16;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-body > * { position: relative; z-index: 1; }
+.meta-stage { text-transform: uppercase; letter-spacing: 0.1em; }
 
 /* Depth by layering and a hairline, never by gradient. */
 .lift { transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease; }

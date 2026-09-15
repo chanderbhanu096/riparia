@@ -136,3 +136,71 @@ export default function Specimen({ differential, option, size = 58, alt }) {
     </svg>
   )
 }
+
+// ---------------------------------------------------------------------------
+// Indicator marks: one drawn mark per thing a person can notice, for the picker
+// on the first screen.
+//
+// Why they exist: the capture form was ten identical text rectangles -- the
+// dullest surface in the app and the first one anyone sees, while the drawings
+// that make this product what it is only appeared AFTER submitting. Moving
+// illustration to the front is the same argument as D-026, applied one screen
+// earlier.
+//
+// All marks are drawn in ink, deliberately. Colour in this app means DIAGNOSIS
+// (AUDIT.md D-027), and at this point nothing has been diagnosed -- the person is
+// only saying what they can see. Colour arrives at the differential, where it
+// carries meaning.
+// ---------------------------------------------------------------------------
+
+const M = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.7,
+            strokeLinecap: 'round', strokeLinejoin: 'round' }
+
+const MARKS = {
+  // an iridescent film lying on the surface
+  oily_sheen: <g {...M}><path d="M4 30c6-7 14-8 20-4s14 3 20-3" />
+    <path d="M9 21c5-5 12-6 17-3s11 2 15-2" /><path d="M14 13c4-3 9-4 13-2" />
+    <path d="M6 37c7-5 15-5 22-1s13 2 18-3" /></g>,
+  // bubbles gathered on the water line
+  foam: <g {...M}><circle cx="15" cy="20" r="6" /><circle cx="26" cy="15" r="4.5" />
+    <circle cx="33" cy="22" r="7" /><circle cx="21" cy="28" r="4" />
+    <path d="M4 36h40" /></g>,
+  // colonies on the surface
+  green_growth: <g {...M}><ellipse cx="17" cy="19" rx="8" ry="5.5" />
+    <ellipse cx="30" cy="25" rx="9" ry="6" /><ellipse cx="20" cy="31" rx="6" ry="4" />
+    <circle cx="35" cy="15" r="2" /><circle cx="10" cy="28" r="1.7" /></g>,
+  // an outfall running into the water
+  pipe_discharge: <g {...M}><path d="M6 14h14v9H6z" /><path d="M20 19c4 0 6 4 6 8" />
+    <path d="M26 27c3 3 8 4 14 4" /><path d="M6 37h36" /><path d="M23 24c2 2 3 4 3 6" /></g>,
+  // belly-up
+  dead_fish: <g {...M}><path d="M10 24c6-7 17-7 23 0-6 7-17 7-23 0z" />
+    <path d="M33 24l7-5v10z" /><path d="M17 21l2 2m0-2l-2 2" /><path d="M4 34h40" /></g>,
+  // wipes caught on a branch
+  sewage_debris: <g {...M}><path d="M5 15c8 2 14 5 20 11" />
+    <path d="M14 19c-1 6 1 11 4 14" /><path d="M24 26c-2 5-1 9 2 12" />
+    <path d="M18 33c2 2 5 2 7 0" /><path d="M31 34h10" /></g>,
+  // odour rising
+  smell_sewage: <g {...M}><path d="M6 34h36" />
+    <path d="M14 27c3-3-3-6 0-9s-3-6 0-9" /><path d="M24 27c3-3-3-6 0-9s-3-6 0-9" />
+    <path d="M34 27c3-3-3-6 0-9" /></g>,
+  // odour plus a droplet
+  smell_chemical: <g {...M}><path d="M6 34h36" />
+    <path d="M15 27c3-3-3-6 0-9s-3-6 0-9" /><path d="M26 27c3-3-3-6 0-9s-3-6 0-9" />
+    <path d="M36 20c2.5 3 4 5 4 7a4 4 0 0 1-8 0c0-2 1.5-4 4-7z" /></g>,
+  // a bank giving way
+  erosion: <g {...M}><path d="M4 16h13c3 0 4 3 4 6v6c0 3 2 5 5 5h18" />
+    <path d="M21 22l7-3M23 29l8-2" /><path d="M4 39h40" /><path d="M30 24l4-2" /></g>,
+  // a bottle and a can
+  litter: <g {...M}><path d="M13 16h6v4c0 2 3 3 3 6v10c0 2-1 3-3 3h-6c-2 0-3-1-3-3V26c0-3 3-4 3-6z" />
+    <path d="M29 22h9v14a2 2 0 0 1-2 2h-5a2 2 0 0 1-2-2z" /><path d="M29 22c0-1.5 2-2.5 4.5-2.5S38 20.5 38 22" /></g>,
+}
+
+/** A drawn mark for one indicator, or null when none is defined. */
+export function IndicatorMark({ indicator, size = 40 }) {
+  const mark = MARKS[indicator]
+  if (!mark) return null
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true"
+         style={{ flexShrink: 0, display: 'block' }}>{mark}</svg>
+  )
+}

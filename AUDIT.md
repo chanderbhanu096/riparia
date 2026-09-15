@@ -555,6 +555,22 @@ Colour is the first thing a person matches, and we had thrown it away in the ver
 - **Specimen drawings ported into the app** as `frontend/src/Specimens.jsx`, extended beyond green growth to the sheen shatter test and foam character so the feature is consistent wherever a differential exists. Where no drawing exists the option renders as text alone — never a placeholder.
 - **Labelled as schematic aids, not identification plates**, in the UI as well as the canvas (D-027).
 
+### D-029 — "Too plain": modernising Broadsheet without abandoning it
+- **Date:** 2026-09-15 · **Status:** ACTIVE · **Amends:** D-028
+- **Owner feedback, verbatim:** *"I checked the website and its too plane make it modern look"* — on the deployed app, not the mockup. Correct, and the diagnosis matters more than the fix.
+- **Why the built app looked plain when the mockup did not.** The mockup was the *result* screen at 390×844: dense, illustrated, high-contrast. The first screen a visitor actually lands on is the capture form, and it had **none of that**:
+  1. **The drawings — the single best thing in this design — only appeared AFTER submitting.** The opening screen was ten identical text rectangles.
+  2. **Uniform rhythm.** Every section was a 15px label over a row of chips. No hierarchy, nothing to look at.
+  3. **No scale.** At 1280px it was a lonely narrow column of 14–15px text.
+  4. **No material.** The paper grain had been removed, leaving dead flat cream.
+- **Fix, three moves and deliberately only three** (research on current editorial practice converged on the same discipline: *one* typographic system, *one* colour strategy, *one* controlled layer of depth or texture beats a page full of effects):
+  1. **Illustration moved to the first screen.** Ten drawn indicator marks (`IndicatorMark` in `Specimens.jsx`), picker rebuilt as a two-column illustrated grid. This is the same argument as D-026 applied one screen earlier: show, do not describe. **The dullest surface became the most distinctive one.**
+  2. **Type as architecture.** `clamp()`-scaled display sizes so the page has presence on a laptop, plus **a monospace (IBM Plex Mono) for the utility layer** — labels, counts, statuses, record ids. That separates data from prose at a glance and is where the "crafted" texture comes from. It also suits an observation record specifically.
+  3. **One texture layer + real depth.** Fixed paper-fibre noise at 16% opacity, and elevation from a hairline plus a soft shadow on hover.
+- **Explicitly rejected as AI-slop house style**, despite appearing in every "2026 trends" source: gradient grounds, glassmorphism, blurred colour blobs, rounded cards with a left accent bar. Adopting those would undo the reason for choosing an editorial direction at all. Recorded in `index.css` next to the code so it is not re-added later.
+- **Colour discipline preserved.** Indicator marks are drawn in ink, not colour, because in this app **colour means diagnosis** (D-027) and at selection time nothing has been diagnosed. Colour still arrives at the differential, where it carries meaning.
+- **Cut during the pass:** a `+1 Q` badge on indicators that carry a follow-up question. Cryptic jargon dressed as information; the question announces itself when it appears.
+
 ---
 
 ## 2. Implementation plan — REVISED per D-013 (real dates, ethical core first)
@@ -708,6 +724,7 @@ credible delivery; not the most elaborate architecture, and never guessed entran
 |---|---|---|
 | 2026-09-14 21:55 CEST | Claude (Opus 5) | File created. D-001…D-009 recorded. Track 3 selected over owner's initial Track 2 preference, with reversal path D-003. |
 | 2026-09-14 22:05 CEST | Codex (GPT) via `duet` | Adversarial strategy review, run `20260914-215657-dbebe6`. Verdict **revise**, 8 findings. Earlier run `20260914-215306-6baadf` discarded (inverted roles, placeholder output). |
+| 2026-09-15 09:15 CEST | Claude (Opus 5) | **D-029** owner reported the built app looked plain — correct: the drawings only appeared after submitting, so the first screen was ten text rectangles. Illustration moved to the capture picker (10 drawn indicator marks), clamp-scaled display type, IBM Plex Mono for the metadata layer, one fixed paper-texture layer. Gradients/glassmorphism explicitly rejected and recorded in the CSS. |
 | 2026-09-15 07:40 CEST | Claude (Opus 5) | **D-028** owner chose **Broadsheet**. Design system tokenised; specimens ported to React and extended to the sheen and foam differentials; reviewer-surface guardrails fixed (urgency never wears the precaution red, the three dimensions stay separate and text-labelled, no black panels per queue row). |
 | 2026-09-15 07:00 CEST | Claude (Opus 5) | **D-027** recommendation reversed to **Broadsheet** after Codex picked it and rejected Cyanotype. Decisive: the options name colours and every direction drew them in one ink — and a cyanotype is monochrome by process, so its concept forbids the most diagnostic feature. Specimens now coloured. Five corrections applied. A 16px body pushed the artboard 89px over frame and clipped the safety copy; caught by measuring in-browser, fixed to exactly 844. |
 | 2026-09-15 01:05 CEST | Claude (Opus 5) | **D-026** visual direction. Anna Atkins' 1843 cyanotypes of British algae — published because text descriptions could not identify algae — reframed the differential: draw the specimens rather than describe them. Three bold directions published; three conservative ones dropped. Copy and specimen geometry centralised so parity is structural; a11y floors enforced in the generator after a review found 10.5px labels and the urgency line set in the smallest type on screen. |

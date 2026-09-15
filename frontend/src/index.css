@@ -47,3 +47,77 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ---------------------------------------------------------------------------
+   Modernising Broadsheet without abandoning it (AUDIT.md D-029).
+
+   Three moves, and deliberately only three: one typographic system, one colour
+   strategy, one controlled layer of texture. A page full of effects is what makes
+   something look generated; restraint plus craft is what makes it look made.
+
+   Explicitly NOT used: gradient grounds, glassmorphism, blurred blobs, rounded
+   cards with a left accent bar. Those are the current house style of AI-built
+   sites and would undo the point of choosing an editorial direction at all.
+   --------------------------------------------------------------------------- */
+
+@theme {
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* 1. TYPE AS ARCHITECTURE. Display sizes scale with the viewport so the page has
+      real presence on a laptop instead of being a lonely 15px column. */
+.display-1 {
+  font-family: var(--font-display);
+  font-size: clamp(2.3rem, 5.6vw, 3.6rem);
+  line-height: 0.96;
+  letter-spacing: -0.018em;
+  font-weight: 700;
+}
+.display-2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  font-weight: 700;
+}
+.masthead {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 4.4vw, 2.75rem);
+  line-height: 1;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+}
+/* Long-form copy gets a real measure. */
+.measure { max-width: 62ch; }
+
+/* 2. MONOSPACE FOR METADATA. Labels, counts, statuses and record ids -- the
+      utility layer of an observation record. It is where the "crafted" texture
+      comes from, and it separates data from prose at a glance. */
+.meta {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* 3. ONE LAYER OF TEXTURE. Paper fibre, fixed so it reads as the sheet the page
+      is printed on rather than something scrolling past. Very low opacity: felt,
+      not seen. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.16;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+body > * { position: relative; z-index: 1; }
+
+/* Depth by layering and a hairline, never by gradient. */
+.lift { transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease; }
+@media (hover: hover) {
+  .lift:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgb(21 18 14 / 0.10); }
+}
+.lift:active { transform: translateY(0); }

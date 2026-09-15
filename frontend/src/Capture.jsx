@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { submitObservation, clarify, getProtocol } from './api'
-import Specimen from './Specimens'
+import Specimen, { IndicatorMark } from './Specimens'
 
 // Context questions only. The indicator list is NOT hardcoded here -- it comes from
 // /api/protocol, served from the backend's field_protocol module, so ecological
@@ -52,12 +52,11 @@ export default function Capture({ onDone }) {
   if (result) return <Submitted result={result} onDone={onDone} />
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-9">
       <div>
-        <h2 className="font-display text-[28px] leading-[30px] font-bold text-pretty">
-          Report a stream
-        </h2>
-        <p className="mt-2 text-[15px] leading-[21px] text-muted text-pretty">
+        <div className="meta text-faint">Step one</div>
+        <h2 className="display-1 mt-2 text-pretty">Report a stream</h2>
+        <p className="measure mt-3 text-[16px] leading-[24px] text-muted text-pretty">
           Answer what you can see. <strong className="font-semibold text-ink">“Not
           sure” is always a valid answer</strong> — it is more useful to us than a guess.
         </p>
@@ -66,8 +65,8 @@ export default function Capture({ onDone }) {
       <Field label="Which stream or reach is this?">
         <input value={siteName} onChange={e => setSiteName(e.target.value)}
           placeholder="e.g. Mondego tributary, by the footbridge"
-          className="w-full border border-rule bg-surface px-3 py-2.5 text-[15px]
-                     placeholder:text-faint" />
+          className="w-full border border-rule bg-surface px-4 py-3 text-[16px]
+                     placeholder:text-faint focus:border-ink" />
       </Field>
 
       <Field label="Photo of the stream">
@@ -90,41 +89,48 @@ export default function Capture({ onDone }) {
         </Field>
       ))}
 
-      <Field label="Did you notice any of these?">
-        <p className="mb-2.5 text-[13.5px] leading-[19px] text-muted">
+      <fieldset>
+        <legend className="display-2 text-pretty">Did you notice any of these?</legend>
+        <p className="measure mt-2 text-[15px] leading-[22px] text-muted text-pretty">
           Tick any that apply. Ticking none is a real answer — it means you looked.
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
           {(protocol?.indicators || []).map(ind => {
             const on = answers.indicators.includes(ind.key)
             return (
               <button key={ind.key} type="button" aria-pressed={on}
                 onClick={() => toggle(ind.key)}
-                className={`min-h-11 border px-3 py-2 text-left text-[14px] leading-[19px]
-                  ${on ? 'border-ink bg-ink text-ground font-medium'
-                       : 'border-rule bg-surface text-ink hover:border-ink'}`}>
-                {ind.label}
+                className={`lift flex min-h-[64px] items-center gap-3.5 border px-3.5 py-3
+                            text-left ${on
+                    ? 'border-ink bg-ink text-ground'
+                    : 'border-rule bg-surface text-ink hover:border-ink'}`}>
+                <span className={on ? 'text-ground' : 'text-muted'}>
+                  <IndicatorMark indicator={ind.key} size={38} />
+                </span>
+                <span className="text-[15px] leading-[20px] font-medium">{ind.label}</span>
               </button>
             )
           })}
         </div>
-        {protocol && <p className="mt-2.5 text-[12.5px] leading-[17px] text-faint">{protocol.note}</p>}
-      </Field>
+        {protocol && (
+          <p className="measure mt-3 text-[13px] leading-[19px] text-faint text-pretty">{protocol.note}</p>
+        )}
+      </fieldset>
 
       <Field label="Anything else worth knowing?">
         <textarea rows={3} value={answers.wildlife_seen || ''}
           onChange={e => set('wildlife_seen', e.target.value)}
           placeholder="Wildlife you saw, or anything that struck you as unusual"
-          className="w-full border border-rule bg-surface px-3 py-2.5 text-[15px]
-                     placeholder:text-faint" />
+          className="w-full border border-rule bg-surface px-4 py-3 text-[16px]
+                     placeholder:text-faint focus:border-ink" />
       </Field>
 
       {error && <p role="alert" className="border-2 border-alarm bg-alarm-bg px-3 py-2.5
                                            text-[14px] text-alarm">{error}</p>}
 
       <button onClick={send} disabled={busy}
-        className="w-full bg-ink px-4 py-3.5 text-[13px] font-bold uppercase
-                   tracking-[0.16em] text-ground disabled:opacity-60">
+        className="lift w-full bg-ink px-4 py-4 text-[13px] font-bold uppercase
+                   tracking-[0.18em] text-ground disabled:opacity-60">
         {busy ? 'Sending…' : 'Send observation'}
       </button>
     </div>
@@ -295,8 +301,8 @@ function TensionCard({ id, tension }) {
 
 function Field({ label, children }) {
   return (
-    <fieldset className="space-y-2">
-      <legend className="text-[15px] font-semibold text-ink">{label}</legend>
+    <fieldset className="space-y-2.5">
+      <legend className="meta text-faint">{label}</legend>
       {children}
     </fieldset>
   )
@@ -307,7 +313,7 @@ function Choices({ name, value, onChange, options }) {
     <div className="flex flex-wrap gap-2">
       {options.map(([v, l]) => (
         <label key={v}
-          className={`min-h-11 cursor-pointer border px-3.5 py-2.5 text-[14px] leading-[19px]
+          className={`lift min-h-11 cursor-pointer border px-4 py-2.5 text-[15px] leading-[20px]
             ${value === v ? 'border-ink bg-ink text-ground font-medium'
                           : 'border-rule bg-surface text-ink hover:border-ink'}
             ${v === 'unsure' ? 'italic' : ''}`}>

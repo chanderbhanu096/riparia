@@ -1,0 +1,196 @@
+{
+  "schema_version": "riparia.provenance.v1",
+  "generated_at": "2026-09-15T10:05:00+00:00",
+  "format": "RIPARIA provenance JSON",
+  "count": 1,
+  "records": [
+    {
+      "id": "demo00cyano1",
+      "record_class": "synthetic",
+      "submitted_at": "2026-09-15T10:00:00+00:00",
+      "observed_at": null,
+      "site": {
+        "key": "ac04eff856dfb7c1",
+        "name": "Demonstration reach (simulated)",
+        "latitude": null,
+        "longitude": null
+      },
+      "original_answers": {
+        "water_clarity": "clear",
+        "flow": "slow",
+        "surrounding_land_use": "park",
+        "indicators": [
+          "green_growth"
+        ],
+        "wildlife_seen": "unsure"
+      },
+      "clarifications": [
+        {
+          "question_id": "growth_type",
+          "question": "Which of these does it look most like? This one matters a lot — these look similar but mean very different things.",
+          "field": "indicators",
+          "indicator": "green_growth",
+          "option_key": "cyanobacteria",
+          "response": "Blue-green, like spilled paint or scum on the surface",
+          "citizen_disagrees": false,
+          "at": "2026-09-15T10:01:00+00:00"
+        }
+      ],
+      "review": {
+        "reviewer": "DEMO coordinator — scripted role, not an independent expert",
+        "decision": "Escalate for a local site visit",
+        "note": "Scripted demonstration: the reported paint-like appearance warrants follow-up. No bloom, toxin, exposure or health outcome is confirmed.",
+        "at": "2026-09-15T10:04:00+00:00",
+        "approved_for_summary": true,
+        "reviewed_content_sha256": "87343c1c3ec76017205c32ba196ed9906d498afe7d78918120ab14249f22977a",
+        "history": [
+          {
+            "reviewer": "DEMO coordinator — scripted role",
+            "decision": "Record the proposed follow-up action",
+            "note": "Scripted first assessment; summary approval not yet selected.",
+            "at": "2026-09-15T10:03:00+00:00",
+            "approved_for_summary": false,
+            "reviewed_content_sha256": "87343c1c3ec76017205c32ba196ed9906d498afe7d78918120ab14249f22977a"
+          }
+        ]
+      },
+      "summary_eligibility": {
+        "eligible": true,
+        "reason": "A named reviewer approved this version for the site summary."
+      },
+      "assessment": {
+        "completeness": {
+          "answered": 5,
+          "total": 5,
+          "missing": [],
+          "marked_unsure": [
+            "wildlife_seen"
+          ],
+          "note": "Fields left blank are simply not recorded. 'Unsure' is a valid answer and is not a gap."
+        },
+        "detected_inconsistency": [],
+        "ecological_urgency": {
+          "level": "high",
+          "reasons": [
+            "Green, blue-green or grey growth in or on the water — Possible cyanobacterial bloom. Blooms can produce toxins that affect people and animals, and they can develop and disperse within days — so timing matters for a reviewer."
+          ],
+          "resolved": {
+            "green_growth": {
+              "reading": "cyanobacterial_scum",
+              "urgency": "high",
+              "explain": "Possible cyanobacterial bloom. Blooms can produce toxins that affect people and animals, and they can develop and disperse within days — so timing matters for a reviewer.",
+              "one_health": "Keep children and dogs out of the water and off the shoreline until this has been assessed, and do not let animals drink. Dogs have died after drinking at affected water."
+            }
+          },
+          "one_health_notes": [
+            "Keep children and dogs out of the water and off the shoreline until this has been assessed, and do not let animals drink. Dogs have died after drinking at affected water."
+          ],
+          "unresolved_indicators": [],
+          "note": "A triage judgement about whether a person should look, and how soon. Not an ecological status classification, and deliberately not reduced when a record is incomplete or uncertain."
+        },
+        "review_status": "reviewer_assessed",
+        "field_differentials": [],
+        "triage": {
+          "score": 108.3,
+          "rationale": "high potential consequence, 1 unresolved point(s) a reviewer could settle"
+        },
+        "disclaimer": "This is a description of a citizen report, not a validation of it. No observation is accepted, rejected or called validated without an explicit reviewer decision."
+      },
+      "photo": {
+        "path": null,
+        "included_in_download": false,
+        "model_findings": null,
+        "role": "Advisory question raising only; never evidence of safety or a reviewer decision."
+      },
+      "provenance": {
+        "reviewed_content_sha256": "87343c1c3ec76017205c32ba196ed9906d498afe7d78918120ab14249f22977a",
+        "original_answers_write_once": true,
+        "assessment_basis": "Recomputed at export from the current field protocol and recorded citizen clarifications; not a stored historical assessment.",
+        "protocol_source": "backend/domain/field_protocol.py",
+        "protocol_version": "2026-09-15.1",
+        "assessment_version": "0.4.0",
+        "review_history_note": "Earlier saved assessments are preserved in review.history from this release onward; previously overwritten assessments cannot be recovered.",
+        "identity_note": "Reviewer names and record classes are self-declared; this prototype has no identity verification.",
+        "time_note": "Submission time is recorded. Time of observation was not collected and is not inferred."
+      },
+      "proposed_fhir_mapping": {
+        "status": "proposed mapping",
+        "fhir_version": "4.0.1 (R4)",
+        "profile": null,
+        "validator": null,
+        "validated": false,
+        "scope": "Possible human or animal contact pathways only; no patient or measured exposure is invented.",
+        "reason": "Candidate resources supplied for integration discussion.",
+        "resources": [
+          {
+            "resourceType": "Location",
+            "id": "site-ac04eff856dfb7c1",
+            "name": "Demonstration reach (simulated)",
+            "description": "Citizen-supplied site; not a verified location registry."
+          },
+          {
+            "resourceType": "Observation",
+            "id": "demo00cyano1-cyanobacterial-scum",
+            "status": "preliminary",
+            "code": {
+              "text": "Reported stream indicator with a potential human or animal contact pathway"
+            },
+            "subject": {
+              "reference": "Location/site-ac04eff856dfb7c1"
+            },
+            "issued": "2026-09-15T10:00:00+00:00",
+            "valueString": "Possible cyanobacterial bloom. Blooms can produce toxins that affect people and animals, and they can develop and disperse within days — so timing matters for a reviewer.",
+            "method": {
+              "text": "Citizen visual report and field answer, with attributed reviewer approval"
+            },
+            "note": [
+              {
+                "text": "PROPOSED MAPPING; record class: synthetic. Not validated against a FHIR profile."
+              },
+              {
+                "text": "Potential contact pathway only. No human exposure, toxin measurement, diagnosis or water safety determination was recorded. issued is submission time; observation time was not collected."
+              },
+              {
+                "text": "Protocol precaution: Keep children and dogs out of the water and off the shoreline until this has been assessed, and do not let animals drink. Dogs have died after drinking at affected water."
+              },
+              {
+                "text": "Reviewer decision: Escalate for a local site visit"
+              }
+            ]
+          },
+          {
+            "resourceType": "Provenance",
+            "id": "demo00cyano1-cyanobacterial-scum-provenance",
+            "target": [
+              {
+                "reference": "Observation/demo00cyano1-cyanobacterial-scum"
+              }
+            ],
+            "recorded": "2026-09-15T10:05:00+00:00",
+            "activity": {
+              "text": "Exported an explicitly approved citizen report as a proposed mapping"
+            },
+            "agent": [
+              {
+                "type": {
+                  "text": "Reviewer (self-declared identity)"
+                },
+                "who": {
+                  "display": "DEMO coordinator — scripted role, not an independent expert"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "limitations": [
+    "Reports describe what people observed; they do not establish water safety, exposure, disease or a Water Framework Directive status.",
+    "Only reports explicitly approved by a named reviewer are included as evidence. Approval is an attributed judgment, not ground truth.",
+    "Authentic, simulated and evaluation records are kept separate. Record class and reviewer identity are self-declared in this prototype.",
+    "Site groups use the submitted name and coordinates, not a verified site registry. No trend or representativeness is inferred.",
+    "FHIR content is a proposed mapping, not a validated FHIR export. No implementation profile or validator has been applied.",
+    "This JSON preserves a handoff trail; FAIR/ODH interoperability and recipient-system acceptance have not been demonstrated."
+  ]
+}

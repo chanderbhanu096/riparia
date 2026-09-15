@@ -12,11 +12,16 @@ later. There is deliberately no code path in this file that UPDATEs `answers`.
 import json
 import sqlite3
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
-DB_PATH = Path(__file__).parent / "riparia.db"
+from domain.records import content_fingerprint
+import config
+
+DB_PATH = (config.DATA_DIR / "riparia.db" if config.DATA_DIR else
+           Path(__file__).parent / "riparia.db")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS observations (
@@ -38,13 +43,19 @@ CREATE TABLE IF NOT EXISTS observations (
 RECORD_CLASSES = ("synthetic", "authentic", "evaluation")
 
 
-def connect() -> sqlite3.Connection:
+@contextmanager
+def connect() -> Iterator[sqlite3.Connection]:
     con = sqlite3.connect(DB_PATH)
     con.row_factory = sqlite3.Row
-    return con
+    try:
+        with con:
+            yield con
+    finally:
+        con.close()
 
 
 def init() -> None:
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     with connect() as con:
         con.executescript(SCHEMA)
 
@@ -84,6 +95,7 @@ def add_clarification(oid: str, question_id: str, question: str, field: str,
     is stored as data rather than treated as a problem to resolve (D-012).
     """
     with connect() as con:
+        con.execute("BEGIN IMMEDIATE")
         row = con.execute(
             "SELECT clarifications FROM observations WHERE id=?", (oid,)
         ).fetchone()
@@ -104,7 +116,9 @@ def add_clarification(oid: str, question_id: str, question: str, field: str,
                     (json.dumps(items), oid))
 
 
-def set_review(oid: str, reviewer: str, decision: str, note: str) -> None:
+def set_review(oid: str, reviewer: str, decision: str, note: str,
+               approved_for_summary: bool = False,
+               reviewed_content_sha256: str | None = None) -> None:
     """Record a reviewer's ATTRIBUTED assessment -- not 'ground truth' (D-012).
 
     A reviewer is a named person with an opinion, and reviewers disagree with each
@@ -112,11 +126,25 @@ def set_review(oid: str, reviewer: str, decision: str, note: str) -> None:
     laundering one person's judgement into fact.
     """
     with connect() as con:
+        con.execute("BEGIN IMMEDIATE")
+        row = con.execute("SELECT * FROM observations WHERE id=?", (oid,)).fetchone()
+        if row is None:
+            raise KeyError(oid)
+        rec = _hydrate(row)
+        fingerprint = content_fingerprint(rec)
+        if approved_for_summary and reviewed_content_sha256 != fingerprint:
+            raise ValueError("The report changed or no reviewed version was supplied. Reload and review the current report before approving it.")
+        previous = rec.get("review") or {}
+        history = list(previous.get("history", []))
+        if previous:
+            history.append({key: value for key, value in previous.items() if key != "history"})
+        review = {"reviewer": reviewer, "decision": decision, "note": note,
+                  "at": _now(), "approved_for_summary": approved_for_summary,
+                  "reviewed_content_sha256": fingerprint,
+                  "history": history}
         con.execute(
             "UPDATE observations SET review=?, review_status=? WHERE id=?",
-            (json.dumps({"reviewer": reviewer, "decision": decision,
-                         "note": note, "at": _now()}),
-             "reviewer_assessed", oid),
+            (json.dumps(review), "reviewer_assessed", oid),
         )
 
 

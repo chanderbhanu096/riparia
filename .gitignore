@@ -8,6 +8,9 @@ backend/.venv/
 __pycache__/
 *.pyc
 *.db
+*.db-wal
+*.db-shm
+*.db-journal
 backend/riparia.db
 backend/adapters/riparia.db
 backend/uploads/

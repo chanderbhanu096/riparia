@@ -1,49 +1,52 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Capture from './Capture'
 import Review from './Review'
+import Sites from './Sites'
 
-// Broadsheet (AUDIT.md D-028): a field observation sheet. Bodoni for the masthead
-// and one heavy rule beneath it -- and nowhere else. Everything a person actually
-// reads is set in Archivo.
+const VIEWS = [['citizen', 'Report a stream'], ['reviewer', 'Review observations'], ['sites', 'One Health summary']]
+
 export default function App() {
   const [mode, setMode] = useState('citizen')
   const [key, setKey] = useState(0)
-
+  const [reviewVisited, setReviewVisited] = useState(false)
+  const main = useRef(null)
+  function newReport() {
+    setKey(k => k + 1)
+    requestAnimationFrame(() => { main.current?.focus(); window.scrollTo({ top: 0 }) })
+  }
+  function navigate(next) {
+    if (next === 'reviewer') setReviewVisited(true)
+    setMode(next)
+    requestAnimationFrame(() => main.current?.focus())
+  }
   return (
-    <div className="min-h-screen bg-ground text-ink">
-      <header className="mx-auto max-w-4xl px-5 pt-7">
-        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3
-                        border-b-[3px] border-ink pb-2.5">
-          <h1 className="masthead">RIPARIA</h1>
-          <nav className="flex gap-5 pb-1" aria-label="Switch role">
-            {[['citizen', 'Report'], ['reviewer', 'Review']].map(([m, label]) => (
-              <button key={m} onClick={() => setMode(m)} aria-current={mode === m}
-                className={`meta meta-stage inline-flex min-h-11 items-center px-1 ${mode === m
-                    ? 'text-ink border-b-2 border-ink'
-                    : 'text-faint border-b-2 border-transparent hover:text-ink'}`}>
-                {label}
-              </button>
-            ))}
-          </nav>
-        </div>
-        <p className="measure border-b border-rule py-2 body-2 text-muted">
-          AI asks the question. You answer it. A named reviewer decides.
-        </p>
+    <div className="app-shell">
+      <a href="#main" className="skip-link">Skip to content</a>
+      <header className="site-header page-gutter">
+        <button className="brand" onClick={() => navigate('citizen')} aria-label="Riparia home">
+          <svg viewBox="0 0 36 40" fill="none" aria-hidden="true"><path d="M6 2c25 10-18 21 9 36M18 2c25 10-18 21 9 36M30 2c25 10-18 21 9 36" stroke="currentColor" strokeWidth="2.5"/></svg>
+          <span>RIPARIA<span className="brand-caption">THE CITIZEN FIELD STATION</span></span>
+        </button>
+        <nav className="main-nav" aria-label="Main navigation">
+          {VIEWS.map(([m, label]) => (
+            <button key={m} onClick={() => navigate(m)} aria-current={mode === m ? 'page' : undefined}
+              className={mode === m ? 'nav-item active' : 'nav-item'}>{label}</button>
+          ))}
+        </nav>
+        <span className="prototype-label"><span aria-hidden="true">◇</span> Research prototype</span>
       </header>
-
-      <main className="mx-auto max-w-4xl px-5 py-8">
-        {mode === 'citizen'
-          ? <Capture key={key} onDone={() => setKey(k => k + 1)} />
-          : <Review />}
+      <main id="main" ref={main} tabIndex={-1} className="page-gutter main-content">
+        {/* Visiting another view must not discard a citizen's unfinished report. */}
+        <div hidden={mode !== 'citizen'}><Capture active={mode === 'citizen'} key={key} onDone={newReport} /></div>
+        {reviewVisited && <div hidden={mode !== 'reviewer'}><Review active={mode === 'reviewer'} onReport={() => navigate('citizen')} /></div>}
+        {mode === 'sites' && <Sites onReview={() => navigate('reviewer')} />}
       </main>
-
-      <footer className="mx-auto max-w-4xl px-5 pb-12 pt-2">
-        <div className="measure border-t border-rule pt-3 body-2 text-faint">
-          Prototype for the OneAquaHealth IEEE Global Hackathon 2026, Track 3. Not
-          affiliated with the OneAquaHealth consortium. Drawings are schematic aids
-          shown beside the descriptions, not identification plates, and have not been
-          validated against field examples. Records marked <em>simulated</em> are
-          generated for demonstration and are not real observations.
+      <footer className="site-footer page-gutter">
+        <div className="footer-top"><span className="footer-wordmark">RIPARIA</span><span>For the water. For the life around it.</span></div>
+        <div className="footer-bottom">
+          <p>OneAquaHealth IEEE Global Hackathon 2026 · Track 3<br />Independent prototype; not affiliated with the OneAquaHealth consortium.</p>
+          <p>Drawings are schematic aids, not identification plates. Practice reports are labelled simulated. Human review is always required.</p>
+          <a href="https://github.com/chanderbhanu096/riparia" target="_blank" rel="noreferrer">Explore the project ↗</a>
         </div>
       </footer>
     </div>

@@ -20,7 +20,7 @@
 | **Owner** | chanderbhanu096 |
 | **Authoring agent** | Claude Code (Opus 5) |
 | **Review agent** | Codex / GPT (via `duet` skill) — see §7 |
-| **Status** | **P1–P3 complete. Live at https://riparia-oah.azurewebsites.net · repo https://github.com/chanderbhanu096/riparia · backend modularised (D-024). Next: P4 insight + export.** |
+| **Status** | **P1–P4 implemented. Full-width field-station redesign (D-031), explicit-approval site summary + export (D-032), demo/submission drafts and six-case walkthrough (D-033). Live at https://riparia-oah.azurewebsites.net; new shell and existing records verified (D-034). Next: record video, physical-phone and independent ecology checks.** |
 
 ---
 
@@ -67,10 +67,10 @@ scores the stream, never accepts, never rejects. It asks; a person answers; a pe
 | **Submission deadline** | **2026-09-30, 21:00 PDT** — target submission **2026-09-29**, a day early |
 | Days left at last update | ~15 calendar days |
 | Builder | **Solo student.** Not a team. Plan against one person's partial attention |
-| Phases done | P0 lock · P1 ethical spine · P2 vision pass · P3 reviewer surfaces · design direction chosen and built through all surfaces |
-| **Phase remaining** | **P4** — One Health site summary + standards export · then harden · then demo video + submit |
-| Deliverables status | Public repo ✅ · working prototype ✅ (deployed) · **demo video ❌ not started** · project description ❌ · track alignment statement ❌ |
-| Tests | 38 assessment-contract checks, `cd backend && python3 test_assess.py` |
+| Phases done | P0 lock · P1 ethical spine · P2 vision pass · P3 reviewer surfaces · P4 summary/export · full-width field-station redesign |
+| **Phase remaining** | Harden on a physical phone · record demo video · finalise and submit the written draft |
+| Deliverables status | Public repo ✅ · working prototype ✅ · **demo video: script ready, recording not started** · project description + track alignment statement: local drafts ready |
+| Tests | 39 assessment checks · 12 isolated HTTP handoff tests (`backend/test_handoff.py`) · six scripted cases / 50 behavior checks (`scripts/walkthrough.py`) |
 
 ### 00.4 The product thesis, and why it is shaped this way
 
@@ -110,10 +110,15 @@ backend/
       azure_openai.py      Azure AI Foundry, gpt-4.1-mini
       null.py              offline provider; always available
   api/                 HTTP shape only, one module per resource
-  test_assess.py       38 contract checks — the guard against risk R8
+  test_assess.py       39 assessment checks — the guard against risk R8
+  test_handoff.py      isolated HTTP checks for approval, provenance and storage
+  domain/records.py    report fingerprint and current approval eligibility
+  domain/handoff.py    site evidence + proposed FHIR R4 mapping
+  api/sites.py         summaries and downloadable provenance JSON
 frontend/src/
-  App.jsx  Capture.jsx  Review.jsx      the three surfaces
-  Specimens.jsx                          all drawings (specimens + indicator marks)
+  App.jsx  Capture.jsx  Review.jsx  Sites.jsx    shell + report/review/summary
+  Specimens.jsx                          diagnostic specimens + indicator marks
+  RiverScene.jsx                         decorative landscape, not diagnostic
   index.css                              design tokens + type scale
 design/                the design-direction artboards and their generator
 ```
@@ -135,7 +140,7 @@ cd frontend && npm install && npm run dev -- --port 5180
 cd backend && python3 test_assess.py
 ```
 
-**Deploy** (Azure App Service `riparia-oah`, resource group `signwise-rg`, on the owner's
+**Deploy** (see `docs/DEPLOYMENT.md` for data preservation and release verification; Azure App Service `riparia-oah`, resource group `signwise-rg`, on the owner's
 existing B1 plan): build the frontend, stage `backend/*.py` + `domain/ adapters/ api/` +
 `frontend/dist` as `static/`, zip, `az webapp deploy`. Credentials are **Azure App
 Settings**, never in the repo (`.env` is gitignored, `.env.example` is committed).
@@ -171,18 +176,18 @@ These are the product's spine. Everything else is negotiable; these are not.
 
 ### 00.8 What is left
 
-1. **P4** — One Health site summary + FAIR/ODH export with a proposed FHIR mapping (D-007, D-014).
+1. **P4 implemented** — explicit reviewer approval, site summary, provenance JSON and proposed FHIR R4 mapping. See `docs/EXPORT.md` and D-032.
 2. **Harden** — real-phone pass, outdoor legibility, keyboard and VoiceOver (all currently unverified).
-3. **A2/A3** — the observation-to-action diagram and one annotated export example (D-016); the cheapest Impact points available.
-4. **A1** — the small scripted walkthrough, honestly labelled as a walkthrough and not a study (D-015).
-5. **Demo video** (3–5 min) + project description + track alignment statement. **Not started.**
+3. **A2/A3 complete as local artefacts** — `docs/OBSERVATION_TO_ACTION.md` and `docs/EXPORT.md` plus reproducible synthetic JSON.
+4. **A1 executed** — six invented cases, 50 software-behavior checks; `docs/WALKTHROUGH.md`. Not a study or independent validation.
+5. **Demo video** — 4:25 script in `docs/DEMO_SCRIPT.md`; recording remains. Description and Track 3 statement drafted in `docs/SUBMISSION_DRAFT.md`; nothing submitted.
 
 ### 00.9 Reading order, and where answers live
 
 | Question | File |
 |---|---|
 | What is this and why is it shaped this way? | **this section**, then §0 |
-| Why was every decision made? | §1 and §1b of this file, D-001 … D-030 |
+| Why was every decision made? | §1 and §1b of this file, D-001 … D-034 |
 | What does the ecology mean? | `backend/domain/field_protocol.py` — every claim cited |
 | What did an independent reviewer say? | `REVIEW_GPT.md`, `DESIGN_VERDICT_GPT.md`, `UX_REVIEW_GPT.md` |
 | What does the product claim publicly? | `README.md`, including its **limitations** section |
@@ -784,6 +789,39 @@ The "Let me update that" button stored the literal sentence *"Citizen updated th
 
 **Deferred as explicitly not submission blockers** (its ranking, which I followed): queue search, alternate sorting, a pre-send summary screen. *"Square corners, absence of search and lack of a decorative progress percentage are much less consequential"* than a citizen leaving before answering or a reviewer losing their work.
 
+### D-031 — Full-width field station, following the owner's new design instruction
+- **Date:** 2026-09-15 · **Status:** ACTIVE · **Amends:** D-028, D-029, D-030 visual specifics
+- **Owner request:** use the full browser width and improve a design they still found dull. This is new authorisation to revise the earlier chosen treatment; preserving the narrow column was not a requirement.
+- **Built:** removed every outer `max-w-4xl` cap; fluid page gutters, desktop two-column capture, a decorative river/topography illustration, forest ink on a light ground, larger editorial titles, clearly numbered field sections, a full-width review desk and a separate One Health summary. Controls remain clear and keyboard focus visible; panels now have restrained 8px corners. Brand colour is not a diagnostic state: diagnostic specimens keep their colours; ochre means triage; red remains precaution-only.
+- **Functional improvements alongside design:** explicit Real observation / Practice report choice; synthetic records stay labelled; unfinished citizen and reviewer drafts survive navigation between views; current review status refreshes on returning to the report; original answers are visible beside clarification; missing checklist is missing evidence, never an empty observed list; clarification retry resends the failed answer.
+- **Verification:** rendered desktop and 390px mobile views; measured no horizontal overflow, including 1920px desktop where the main spans the full available width. Browser walkthrough: practice report → cyanobacteria option → full precaution → named reviewer → explicit inclusion → summary → downloaded provenance, with original answers preserved. Physical-phone sunlight, VoiceOver and independent ecological usability remain unverified.
+
+### D-032 — P4: explicit approval binds the handoff to the report a person reviewed
+- **Date:** 2026-09-15 · **Status:** ACTIVE · **Implements:** D-007, D-014, D-016/A3
+- **Decision:** a free-text assessment or `reviewer_assessed` status does not imply approval. The reviewer must explicitly select **Include this observation in the site summary**. Approval carries the content fingerprint shown to that reviewer. A stale approval is rejected; a later citizen clarification removes summary/export eligibility until another review.
+- **Built:** `/api/sites?record_class=...`; site and individual-record JSON downloads; original answers, all clarifications, reviewer history, four dimensions, source/version and limitations. Real, synthetic and evaluation evidence never mix. Anonymous unnamed reports without coordinates are not merged into a pretend site. No trend, confirmed pollution, exposure, water-safety or WFD conclusion is inferred.
+- **Standards claim:** native RIPARIA provenance JSON plus a **proposed FHIR R4 4.0.1 mapping**, only for existing contact-pathway readings. No fictional patient, measured toxin or confirmed exposure. No validated profile, validator or receiving-system integration. The host's draft OAH implementation guide is a future comparison, not a compatibility claim. See `docs/EXPORT.md` and its reproducible synthetic example.
+- **Hardening:** unique uploaded filenames preserve prior photographic evidence; SQLite connections close; reviewer history is retained from this release onward. Previously overwritten history cannot be recovered.
+- **Ecology regression found and fixed:** foam answered “unsure” previously fell from high to medium urgency. It now stays high. More categorical explanations such as “not a spill” were narrowed to a possible visual reading; a field answer does not establish safety.
+- **Verification:** 39 assessment checks and isolated HTTP contracts pass, including unapproved exclusion, late clarification, stale approval, record-class separation, original-answer preservation, history and photo collisions. Existing local data was not used for tests.
+
+### D-033 — Demo evidence prepared; official announcement resolves stale rules dates
+- **Date:** 2026-09-15 · **Status:** ACTIVE · **Amends:** §0 dates and current delivery status
+- **Prepared:** `docs/DEMO_SCRIPT.md` (4:25), `docs/SUBMISSION_DRAFT.md`, `docs/OBSERVATION_TO_ACTION.md`, and the six-case `docs/WALKTHROUGH.md` generated by `scripts/walkthrough.py`. The walkthrough passed six cases / 50 software-behavior checks. It uses invented inputs, no independent assessor, and makes no accuracy or measured-outcome claim. Answering “unsure” removes a pending question but does not resolve the ecological ambiguity.
+- **Still missing:** the recorded video and a genuine field capture clip, physical-phone/assistive-technology tests, independent freshwater-practitioner review, final Devpost entry.
+- **Official discrepancy verified:** the rules page still lists September 16–30 and registration close August 31. The newer [official September 14 announcement](https://oneaquahealth-ieee-hackathon.devpost.com/updates/46406-reminder-oneaquahealth-hackathon-starts-tomorrow-get-ready-to-build-submit) explicitly states **September 14–30**. Devpost's submission-start timestamp agrees (September 14, 16:00 UTC). The recorded initial build is within that newer period. Registration was confirmed by an authenticated read; the existing Untitled entry is **pre-draft**, not a completed submission. No external submission or message was sent.
+- **Deadline unchanged:** September 30, 21:00 PDT; target September 29. The published 30/20/20/15/15 weights agree across current materials. Scoring-scale metadata conflicts with the rules prose, so no predicted numerical score is offered. Winning and a particular cash payout are not assured.
+
+### D-034 — Preserve live observations across Azure releases
+- **Date:** 2026-09-15 · **Status:** ACTIVE · **Amends:** D-025 storage limitation
+- **Finding:** Azure Oryx serves this Python app from a temporary runtime directory. Code-relative SQLite and photo paths therefore risk being replaced on redeployment. This is a data-loss risk, not an acceptable property to carry into the new handoff.
+- **Fix:** on Azure, runtime data lives in `/home/data/riparia`; ordinary local defaults stay unchanged. `RIPARIA_DATA_DIR` permits an explicit override. `scripts/preserve_runtime.py` makes a verified SQLite online backup and photo copy, supports a brief write freeze for the final transfer, and can restore old-runtime writes on rollback. Backups remain outside the served site directory.
+- **Release:** `scripts/stage_release.py` stages code and the built frontend only, excludes credentials/runtime data, and checks for credential leakage without printing any key. A deployment succeeds only after the served bundle and API are verified, with the old record IDs and photo hashes still present. See `docs/DEPLOYMENT.md` for the completed release record.
+- **Pre-existing missing evidence:** before deployment, all seven live records were present, but two photo references pointed to one already-missing image (HTTP 404). No local image was substituted without proof. The review view now states that the original photo is unavailable.
+- **Additional hardening:** static-file paths are resolved and must remain within the frontend build directory. Encoded traversal is rejected.
+- **Live verification:** public shell matches `index-a93AXrZU.js` / `index-BJBnMzlj.css`; all seven existing observation objects compare unchanged. `/api/sites` returns JSON and the public browser loads the redesigned checklist and summary without console errors.
+- **Verification:** 12 isolated HTTP tests and 39 assessment checks; migration rehearsal confirms exact row/photo preservation, old write freeze, new database writes, and rollback unfreeze. Frontend build/lint and browser smoke checks pass. This remains a web prototype, not an installable offline PWA or a production identity/retention system.
+
 ---
 
 ## 2. Implementation plan — REVISED per D-013 (real dates, ethical core first)
@@ -869,7 +907,7 @@ fifth requires a new decision entry explaining what it displaces.
 it is the full briefing and it assumes no prior context. Then:
 
 1. §0.2 (the rubric) is the objective function. Argue against a decision **in rubric terms** or not at all.
-2. **Read §1b (D-010 … D-030) before §1.** The later decisions amend the earlier ones; acting on D-002/D-004/D-008 alone rebuilds mistakes already caught and paid for.
+2. **Read §1b (D-010 … D-034) before §1.** The later decisions amend the earlier ones; acting on D-002/D-004/D-008 alone rebuilds mistakes already caught and paid for.
 3. Do not add a component that is not in D-004 as amended. Build count is **4**, not 5.
 4. Ponytail mode is active: reuse before writing, stdlib before dependency, shortest thing that works. But **never** shorten the eight rules in §00.7 — they are the product's spine.
 5. Append your decisions as `D-0XX`. **Never edit history**; supersede it.
@@ -950,3 +988,6 @@ credible delivery; not the most elaborate architecture, and never guessed entran
 | 2026-09-14 22:40 CEST | Claude (Opus 5) | Owner required expert-grade provenance. Added **D-021** (no invented domain content; cite published method next to the logic) and **D-022** (ARMI trigger-level precedent; shatter test / foam / cyanobacteria-vs-sewage-fungus differentials; WFD non-conflation guardrail). Domain layer rebuilt as `field_protocol.py`. |
 | 2026-09-14 22:20 CEST | Claude (Opus 5) | Owner confirmed **student** + **solo**. Q1/Q2/Q7 closed, R5 closed. Added **D-018…D-020**: solo re-scope cutting FHIR validation, the map, and the weather integration (~3.5 days recovered). Build count stays 4. |
 | 2026-09-14 22:10 CEST | Claude (Opus 5) | Review folded in. Added §1b **D-010…D-017**. Confidence Engine redesigned (3 ecologically wrong rules deleted, single truth score replaced by 4 dimensions). Component 4 cut, build count 5→4. §2 re-dated to real calendar, ethical core moved to front. R8/R9/R10 added; R2 superseded. §7 completed. Q6–Q8 opened. |
+
+| 2026-09-15 | Codex | **D-031–D-033:** full-width field-station design; P4 explicit-approval summaries and provenance export; practice mode and navigation preservation; storage and uncertainty fixes; six-case walkthrough, 4:25 video script, submission draft and action diagram. Verified newer official build dates and registration; actual video/submission remain outstanding. |
+| 2026-09-15 | Codex | **D-034:** persistent Azure runtime data and verified backup/deployment scripts; static-path containment; 12 HTTP contracts, 39 assessment checks and responsive browser checks pass. |

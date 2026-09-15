@@ -2,6 +2,7 @@
 
 import json
 import shutil
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +11,7 @@ from fastapi.responses import JSONResponse
 
 from adapters import store, vision
 from domain import assess
+from domain.records import content_fingerprint, summary_eligibility
 
 from .shared import UPLOADS, differentials_from
 
@@ -37,7 +39,9 @@ async def create(
 
     photo_path = None
     if photo is not None and photo.filename:
-        dest = UPLOADS / Path(photo.filename).name
+        # Camera uploads commonly share names such as image.jpg. A unique stored
+        # name prevents a later report from replacing an earlier report's photo.
+        dest = UPLOADS / f"{uuid.uuid4().hex}{Path(photo.filename).suffix.lower()}"
         with dest.open("wb") as fh:
             shutil.copyfileobj(photo.file, fh)
         photo_path = f"/uploads/{dest.name}"
@@ -66,6 +70,8 @@ def get_one(oid: str) -> dict[str, Any]:
         raise HTTPException(404, "observation not found")
     return {
         "observation": rec,
+        "content_sha256": content_fingerprint(rec),
+        "summary_eligibility": summary_eligibility(rec),
         "assessment": assess.assess(rec["answers"], rec["photo_findings"],
                                     rec["review_status"], differentials_from(rec)),
     }

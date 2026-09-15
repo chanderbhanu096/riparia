@@ -19,13 +19,13 @@ The contract the whole system keeps (AUDIT.md D-012):
 
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from adapters import store
-from api import observations, protocol, review
+from api import observations, protocol, review, sites
 from api.shared import UPLOADS
 
 app = FastAPI(
@@ -36,7 +36,7 @@ app = FastAPI(
         "who filed them. It does not score, validate, accept or reject anything -- "
         "only a named reviewer does that."
     ),
-    version="0.3.0",
+    version="0.4.0",
 )
 
 # Dev-wide CORS. In production the SPA is served from this same origin, so this
@@ -72,6 +72,7 @@ async def cache_headers(request, call_next):
 app.include_router(protocol.router)
 app.include_router(observations.router)
 app.include_router(review.router)
+app.include_router(sites.router)
 app.mount("/uploads", StaticFiles(directory=UPLOADS), name="uploads")
 
 
@@ -99,7 +100,9 @@ if DIST.is_dir():
     @app.get("/{full_path:path}", include_in_schema=False)
     def spa(full_path: str) -> FileResponse:
         """Serve the SPA, falling back to index.html for client-side routes."""
-        candidate = DIST / full_path
+        candidate = (DIST / full_path).resolve()
+        if not candidate.is_relative_to(DIST.resolve()):
+            raise HTTPException(404, "not found")
         if full_path and candidate.is_file():
             return FileResponse(candidate)
         return FileResponse(DIST / "index.html")

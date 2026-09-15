@@ -4,6 +4,8 @@
 
 OneAquaHealth IEEE Global Hackathon 2026 — Track 3, AI-Supported Assessment.
 
+[Open the app](https://riparia-oah.azurewebsites.net) · [API docs](https://riparia-oah.azurewebsites.net/docs) · [Project briefing](AUDIT.md)
+
 ---
 
 ## The problem
@@ -11,8 +13,8 @@ OneAquaHealth IEEE Global Hackathon 2026 — Track 3, AI-Supported Assessment.
 Citizen reports of urban streams are visual and olfactory: a sheen, some foam, green
 growth, a smell. These are exactly the observations that are cheap to collect at scale
 and hard to act on, because the same appearance can mean very different things. An oily
-film is usually harmless iron-oxidising bacteria and occasionally a fuel spill. Foam is
-usually decomposing plant matter and occasionally detergent discharge. Green growth may
+film can be an iron-bacteria biofilm or a possible fuel spill. Foam can come
+from decomposing plant matter or a possible surfactant discharge. Green growth may
 be filamentous algae, a cyanobacterial bloom, or sewage fungus — three things that look
 alike and mean nothing alike.
 
@@ -80,6 +82,19 @@ No auto-accept and no auto-reject. Reviewer decisions are stored as **attributed
 assessments** with the reviewer's name against them, not as ground truth — reviewers
 disagree, and that should stay visible.
 
+**5. It carries the human decision into a site summary and export.**
+
+The reviewer explicitly chooses whether to include the current version in the site
+summary. A named review alone is not enough, and new clarifications require a fresh
+approval. Original reports, clarification answers, reviewer decisions and history travel
+in the provenance JSON. A limited **proposed FHIR R4 mapping** is included only when
+an existing protocol reading carries a potential contact pathway. No conformance claim
+is made. [Annotated export](docs/EXPORT.md).
+
+The interface uses the full browser width, with a two-column field form and evidence
+workspace on desktop and a stacked layout on phones. **Practice report** stores a
+visibly simulated record; the summary keeps real, practice and evaluation data separate.
+
 ## The One Health link, made concrete
 
 The clearest environment → animal → human pathway a citizen photo can surface is a
@@ -105,9 +120,9 @@ Stated plainly, because a method is only as trustworthy as its declared limits.
   report from a member of the public is not a WFD classification and is never rendered
   in WFD vocabulary. The urgency levels here are triage categories: *should a person
   look at this, and how soon?*
-- **It does not validate observations.** It describes them. Only a named reviewer
-  validates anything.
-- **The vision model hallucinates, and we can prove it.** The photo pass runs
+- **It does not validate observations.** It describes them. Reviewer decisions are attributed judgments. An explicit approval only permits
+  the current report version into the site summary; it is not scientific validation.
+- **The vision model hallucinates, and we can prove it.** The optional photo pass runs
   `gpt-4.1-mini` on Azure AI Foundry. Given a 96×96 PNG of two flat colour bands —
   green above, brown below, no texture at all — it reported *"a flowing body of water
   surrounded by rocks and vegetation."* Hardening the prompt (report only what is
@@ -123,9 +138,9 @@ Stated plainly, because a method is only as trustworthy as its declared limits.
 - **It does not measure water quality.** No pH, no dissolved oxygen, no macroinvertebrate
   identification. Asking untrained people for those yields confident numbers that are
   wrong, which is worse than no data.
-- **Its accuracy is not established.** No independent assessment set exists for this
-  prototype. The walkthrough in `docs/` is a **scripted walkthrough, not a validated
-  study**, and is labelled as such.
+- **Its accuracy is not established.** The [six-case scripted walkthrough](docs/WALKTHROUGH.md)
+  checks software behavior on invented inputs. It is **not a validated study** and
+  includes no independent assessor or measured environmental outcomes.
 - **A generator proves reproducibility, not realism.** Records marked *simulated* are
   generated for demonstration. One genuine capture proves the input path works; it does
   not prove reliability.
@@ -163,17 +178,54 @@ Run the assessment contract self-check:
 cd backend && python3 test_assess.py
 ```
 
+## Deployment and runtime data
+
+Azure stores reports and photographs in `/home/data/riparia`, separate from code.
+Locally, the default paths remain `backend/adapters/riparia.db` and `backend/uploads`.
+`RIPARIA_DATA_DIR` can select a different persistent directory. Databases, uploads and
+credentials are not part of the release ZIP or public repository. See the
+[deployment and rollback guide](docs/DEPLOYMENT.md).
+
+## Verification and demo materials
+
+```bash
+cd backend && .venv/bin/python -m unittest -v test_handoff
+# from the repository root:
+python3 scripts/walkthrough.py
+```
+
+The 12 handoff checks use a temporary database and force the vision provider offline.
+They cover approval, stale revisions, record-class separation, immutable originals,
+review history, proposed export fields and photo filename collisions.
+
+- [Release verification and limits](docs/VERIFICATION.md)
+- [Six-case scripted walkthrough and actual results](docs/WALKTHROUGH.md)
+- [4:25 demo script and recording checklist](docs/DEMO_SCRIPT.md)
+- [Submission draft and current readiness](docs/SUBMISSION_DRAFT.md)
+- [Observation-to-action diagram](docs/OBSERVATION_TO_ACTION.md)
+- [Export documentation and reproducible annotated example](docs/EXPORT.md)
+
+**Still needed:** the actual video, a genuine field capture, a physical-phone outdoor
+and assistive-technology pass, and independent ecology review. The written draft is
+not a completed Devpost submission. Reviewer identity and record class are self-declared
+in this prototype; there is no account authentication.
+
 ## Layout
 
 | Path | What it is |
 |---|---|
-| `backend/field_protocol.py` | **All domain content.** Every indicator, differential and urgency level, each cited to published guidance next to the logic it justifies. Reviewable in isolation by a freshwater ecologist. |
-| `backend/assess.py` | The four dimensions. Describes; decides nothing. |
-| `backend/store.py` | SQLite. Enforces one rule: original answers are write-once. |
-| `backend/vision.py` | Photo pass (Azure AI Foundry, `gpt-4.1-mini`). Structurally forbidden from deciding anything; every failure degrades to the offline path. |
-| `backend/main.py` | API. Serves the protocol so the frontend holds no ecological knowledge. |
-| `backend/test_assess.py` | 38 contract checks. Several exist because a review caught the first design getting the ecology wrong. |
-| `AUDIT.md` | Every decision, its reasoning, and what was rejected. |
+| `backend/domain/field_protocol.py` | All ecological indicators, differentials and precautions, with published sources. |
+| `backend/domain/assess.py` | Four dimensions and review-priority reasoning. |
+| `backend/domain/records.py` | Clarification reads, report fingerprint and current summary eligibility. |
+| `backend/domain/handoff.py` | Site evidence, provenance JSON and proposed FHIR mapping. |
+| `backend/adapters/store.py` | SQLite, write-once original answers and retained reviewer history. |
+| `backend/adapters/vision/` | Azure photo pass and the null/offline provider. |
+| `backend/api/` | Observation, review, protocol, summary and export routes. |
+| `backend/main.py` | App composition, caching and static frontend hosting. |
+| `backend/test_assess.py`, `backend/test_handoff.py` | Assessment and isolated HTTP contract checks. |
+| `frontend/src/` | Capture, review and One Health summary; shared design tokens and SVG illustrations. |
+| `docs/`, `scripts/walkthrough.py` | Demo materials, traceable export and reproducible software walkthrough. |
+| `AUDIT.md` | Standing briefing, decision history and current delivery state. |
 | `REVIEW_GPT.md` | Independent adversarial review and what it changed. |
 
 ## Sources

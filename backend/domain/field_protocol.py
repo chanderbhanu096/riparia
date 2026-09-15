@@ -48,6 +48,8 @@ coordinator screen.
 
 from typing import Any
 
+PROTOCOL_VERSION = "2026-09-15.1"
+
 # -----------------------------------------------------------------------------
 # Indicators a member of the public can genuinely observe without equipment.
 #
@@ -84,7 +86,8 @@ INDICATORS: dict[str, dict[str, Any]] = {
                     "urgency": "low",
                     "explain": (
                         "Consistent with iron-oxidising bacteria — a natural biofilm, "
-                        "common where iron-rich groundwater meets the surface. Not a spill."
+                        "common where iron-rich groundwater meets the surface. "
+                        "This field answer supports a natural explanation; it does not establish water safety."
                     ),
                 },
                 "reforms": {
@@ -146,8 +149,11 @@ INDICATORS: dict[str, dict[str, Any]] = {
                 "unsure": {
                     "label": "I could not tell",
                     "reading": "undetermined",
-                    "urgency": "medium",
-                    "explain": "Undetermined. A reviewer can often tell from the photo.",
+                    "urgency": "high",
+                    "explain": (
+                        "Undetermined. Kept at the highest plausible urgency until "
+                        "a person looks; uncertainty does not rule out surfactants."
+                    ),
                 },
             },
         },
@@ -177,7 +183,7 @@ INDICATORS: dict[str, dict[str, Any]] = {
                     "urgency": "medium",
                     "explain": (
                         "Consistent with filamentous green algae. Often a sign of "
-                        "elevated nutrients, but not an immediate hazard."
+                        "elevated nutrients. This visual reading does not establish water safety."
                     ),
                 },
                 "cyanobacteria": {
@@ -322,8 +328,9 @@ def resolve(indicator: str, option_key: str | None) -> dict[str, Any]:
     """Interpret a reported indicator, and the citizen's differential answer if given.
 
     With no differential answer, the indicator's own baseline urgency applies. A
-    differential NEVER lowers urgency below the baseline on its own -- only a
-    reviewer may conclude that a report is not a concern (AUDIT.md D-012).
+    specific citizen answer may narrow the potential consequence. An uncertain
+    answer never lowers it; no reading establishes safety or approves a record
+    (AUDIT.md D-012).
     """
     entry = INDICATORS.get(indicator)
     if entry is None:

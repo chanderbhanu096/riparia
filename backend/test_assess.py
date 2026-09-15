@@ -76,6 +76,9 @@ reformed = ecological_urgency({"indicators": ["oily_sheen"]}, {"oily_sheen": "re
 t("a sheen that swirls back stays high", reformed["level"] == "high")
 t("a citizen who could not tell keeps it high (never assumed benign)",
   ecological_urgency({"indicators": ["oily_sheen"]}, {"oily_sheen": "unsure"})["level"] == "high")
+t("unsure foam does not lower its unresolved high urgency",
+  ecological_urgency({"indicators": ["foam"]}, {"foam": "unsure"})["level"]
+  == ecological_urgency({"indicators": ["foam"]})["level"] == "high")
 
 print("\nDifferentials are only asked where a person can safely answer (D-022):")
 

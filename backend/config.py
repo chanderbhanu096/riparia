@@ -42,3 +42,9 @@ def azure_vision() -> dict[str, str] | None:
 # provider otherwise. Set VISION_PROVIDER=null to force the offline path -- useful
 # for demonstrating the degraded state on purpose.
 VISION_PROVIDER = get("VISION_PROVIDER", "auto")
+
+# Oryx serves Python applications from a temporary directory. Runtime files must
+# live under /home on App Service so a code redeploy cannot replace them.
+_DATA_DIR = get("RIPARIA_DATA_DIR")
+DATA_DIR = (pathlib.Path(_DATA_DIR) if _DATA_DIR else
+            pathlib.Path("/home/data/riparia") if os.environ.get("WEBSITE_SITE_NAME") else None)

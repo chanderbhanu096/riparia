@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getQueue, getObservation, submitReview, getProtocol } from './api'
 
 const R = 'rounded-[6px]'   // controls only
@@ -40,20 +40,25 @@ const Value = ({ children, className = '' }) => (
 
 // D-015: the three record classes stay visibly separate, everywhere. A judge must
 // never have to wonder whether a record on screen is real.
-const ClassTag = ({ cls }) => cls === 'authentic' ? null : (
+const ClassTag = ({ cls }) => (
   <span className="meta meta-stage border border-rule px-1.5 py-0.5 text-faint">
-    {cls === 'synthetic' ? 'simulated' : 'evaluation case'}
+    {cls === 'synthetic' ? 'simulated' : cls === 'authentic' ? 'real observation' : 'evaluation case'}
   </span>
 )
 
-export default function Review() {
+export default function Review({ onReport, active }) {
   const [queue, setQueue] = useState(null)
   const [openId, setOpenId] = useState(null)
   const [error, setError] = useState(null)
+  const [filter, setFilter] = useState('pending')
 
-  const load = () => getQueue().then(setQueue).catch(e => setError(e.message))
-  useEffect(() => { load() }, [])
+  const queueHeading = useRef(null)
+  const hasQueue = Boolean(queue)
+  useEffect(() => { if (hasQueue && !openId && active) queueHeading.current?.focus() }, [hasQueue, openId, active])
+  const load = () => getQueue().then(value => { setQueue(value); setError(null) }).catch(e => setError(e.message))
+  useEffect(() => { if (active) load() }, [active])
 
+  if (openId) return <Detail id={openId} onBack={() => { setOpenId(null); load() }} />
   if (error) return (
     <div role="alert" className={`${R} border-2 border-ink bg-surface p-4`}>
       <p className="heading-2">Could not load the queue</p>
@@ -63,27 +68,46 @@ export default function Review() {
     </div>
   )
   if (!queue) return <p role="status" className="body-1 text-muted">Loading queue…</p>
-  if (openId) return <Detail id={openId} onBack={() => { setOpenId(null); load() }} />
+
+  const pending = queue.items.filter(i => i.review_status === 'not_reviewed')
+  const visible = filter === 'pending' ? pending : queue.items
+  const urgent = pending.filter(i => i.assessment.ecological_urgency.level === 'high')
 
   return (
     <div className="space-y-5">
-      <div>
-        <h2 className="display-1">Review queue</h2>
+      <div className="page-intro">
+        <div>
+        <span className="meta meta-stage text-faint">The coordinator's desk</span>
+        <h2 ref={queueHeading} tabIndex={-1} className="display-1 outline-none">Every observation deserves a look.</h2>
         <p className="measure body-1 mt-3 text-muted text-pretty">
           Ordered by what a review could change, not by arrival time. An uncertain
           report of something serious sits above a tidy report of nothing much,
           because that is where your time changes an outcome.
         </p>
+        </div>
+        <p className="intro-aside">AI raises a question.<br />Your judgement moves it forward.</p>
       </div>
-
-      {queue.items.length === 0 && (
-        <p role="status" className="body-1 border border-rule bg-surface px-4 py-3 text-muted">
-          Nothing waiting. Submit an observation first.
-        </p>
+      <div className="metric-strip">
+        <div className="metric"><Label>Awaiting review</Label><b>{pending.length}</b></div>
+        <div className="metric"><Label>High potential consequence</Label><b className="text-ochre">{urgent.length}</b></div>
+        <div className="metric"><Label>Reviewer assessed</Label><b>{queue.items.length - pending.length}</b></div>
+      </div>
+      <div className="review-layout">
+      <div>
+      <div className="filter-tabs" aria-label="Queue view">
+        <button className="filter-tab" aria-pressed={filter === 'pending'} onClick={() => setFilter('pending')}>Awaiting review · {pending.length}</button>
+        <button className="filter-tab" aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>All observations · {queue.items.length}</button>
+      </div>
+      {visible.length === 0 && (
+        <div role="status" className="empty-state">
+          <span className="meta meta-stage text-faint">A clear desk</span>
+          <h3>{queue.items.length ? 'All caught up.' : 'The next story starts at the stream.'}</h3>
+          <p className="body-1 text-muted">{queue.items.length ? 'Every current report has a named assessment. Find them under All observations.' : 'Submit a real observation, or choose Practice report to try the complete workflow.'}</p>
+          <button onClick={onReport} className="primary-button">Report a stream <span aria-hidden="true">↗</span></button>
+        </div>
       )}
-
-      <ul className="border-t border-rule">
-        {queue.items.map(i => {
+      <ul className={visible.length ? 'queue-list' : ''}>
+        {visible.map(i => {
           const a = i.assessment
           const c = CONSEQUENCE[a.ecological_urgency.level]
           const open = a.completeness.missing.length + a.completeness.marked_unsure.length
@@ -92,8 +116,7 @@ export default function Review() {
           return (
             <li key={i.id} className="border-b border-rule">
               <button onClick={() => setOpenId(i.id)}
-                className="flex w-full items-start gap-4 bg-surface px-4 py-3.5 text-left
-                           hover:bg-ground">
+                className="queue-row flex w-full items-start text-left">
                 <span className={`mt-2 h-2.5 w-2.5 shrink-0 ${c.dot}`} aria-hidden="true" />
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-baseline gap-2">
@@ -106,17 +129,27 @@ export default function Review() {
                     {a.triage.rationale}
                   </span>
                   {/* three separate, labelled facts -- never one merged badge */}
-                  <span className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
+                  <span className="queue-context flex flex-wrap gap-x-5 gap-y-1">
                     <span><Label>Potential consequence</Label>{' '}<Value className={c.text}>{c.label}</Value></span>
                     <span><Label>Open points</Label>{' '}<Value className="text-muted">{open || 'none'}</Value></span>
                     <span><Label>Status</Label>{' '}<Value className="text-muted">{STATUS[i.review_status]}</Value></span>
                   </span>
                 </span>
+                <span className="queue-arrow" aria-hidden="true">↗</span>
               </button>
             </li>
           )
         })}
       </ul>
+      </div>
+      <aside className="side-note">
+        <span className="meta meta-stage">The human in the loop</span>
+        <h3>Consequence comes first.</h3>
+        <p>An uncertain report can still describe something serious. Missing information never makes a potentially urgent report less urgent.</p>
+        <ol><li>Read the original observation.</li><li>Compare the citizen's clarification.</li><li>Record your name, decision and reasoning.</li><li>Choose whether it belongs in the site summary.</li></ol>
+        <p className="mt-6 border-t border-rule pt-4">Prototype role switch: names are self-declared. Reviewer identities are not verified.</p>
+      </aside>
+      </div>
     </div>
   )
 }
@@ -128,10 +161,16 @@ function Detail({ id, onBack }) {
   const [note, setNote] = useState('')
   const [error, setError] = useState(null)
   const [savingReview, setSavingReview] = useState(false)
+  const [approvedForSummary, setApprovedForSummary] = useState(false)
+  const [photoMissing, setPhotoMissing] = useState(false)
   const [protocol, setProtocol] = useState(null)
+  const titleRef = useRef(null)
+  const loaded = Boolean(data)
+  useEffect(() => { if (loaded) titleRef.current?.focus() }, [loaded])
 
   useEffect(() => { getObservation(id).then(setData).catch(e => setError(e.message)) }, [id])
   useEffect(() => { getProtocol().then(setProtocol).catch(() => {}) }, [])
+  if (!data && error) return <div role="alert" className="field-panel"><h2 className="heading-2">Could not load this observation</h2><p className="body-1 my-3">{error}</p><button className="secondary-button" onClick={onBack}>Back to queue</button></div>
   if (!data) return <p role="status" className="body-1 text-muted">Loading…</p>
 
   const { observation: o, assessment: a } = data
@@ -143,7 +182,7 @@ function Detail({ id, onBack }) {
   async function save() {
     if (savingReview) return
     setSavingReview(true); setError(null)
-    try { setData(await submitReview(id, { reviewer, decision, note })) }
+    try { setData(await submitReview(id, { reviewer, decision, note, approvedForSummary, reviewedContentSha256: data.content_sha256 })) }
     catch (e) { setError(e.message) } finally { setSavingReview(false) }
   }
 
@@ -161,7 +200,7 @@ function Detail({ id, onBack }) {
 
       <div className="border-b-[3px] border-ink pb-3">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="display-1">{o.site_name || 'Unnamed reach'}</h2>
+          <h2 ref={titleRef} tabIndex={-1} className="display-1 outline-none">{o.site_name || 'Unnamed reach'}</h2>
           <ClassTag cls={o.record_class} />
         </div>
         <p className="measure body-1 mt-2.5 text-muted text-pretty">
@@ -171,7 +210,7 @@ function Detail({ id, onBack }) {
 
       {/* The four dimensions, kept separate and labelled. No combined score exists
           anywhere in this system (AUDIT.md D-012). */}
-      <dl className="border-t border-rule">
+      <dl className="detail-dimensions">
         <Row label="Potential consequence"
              hint="Whether a person should look, and how soon. Not reduced when a record is uncertain, and not an ecological classification.">
           <span className={`${c.text} text-[15px]`}>{c.label}</span>
@@ -218,11 +257,15 @@ function Detail({ id, onBack }) {
         </Row>
       </dl>
 
+      <div className="detail-body">
+      <div className="detail-evidence">
       {o.photo_path && (
         <div>
           <Label>Photograph</Label>
-          <img src={o.photo_path} alt="Submitted stream photo"
-               className="mt-1.5 max-h-72 border border-rule" />
+          {photoMissing
+            ? <p role="status" className="body-2 mt-2 border border-rule bg-surface p-4 text-muted">The original photo is unavailable. Its reference remains in the record; no replacement image has been substituted.</p>
+            : <img src={o.photo_path} alt="Submitted stream photo" onError={() => setPhotoMissing(true)}
+                className="mt-1.5 max-h-72 max-w-full border border-rule" />}
         </div>
       )}
 
@@ -293,9 +336,9 @@ function Detail({ id, onBack }) {
             <Label>Original answers</Label>
             <dl className="mt-2 space-y-1">
               {Object.entries(o.answers).map(([k, v]) => (
-                <div key={k} className="flex gap-2 text-[14px] leading-[20px]">
+                <div key={k} className="flex flex-wrap gap-x-2 text-[14px] leading-[20px]">
                   <dt className="text-muted">{pretty(k)}:</dt>
-                  <dd className="font-medium">
+                  <dd className="font-medium break-words min-w-0">
                     {Array.isArray(v)
                       ? (v.map(indicatorLabel).join(', ') || 'none selected')
                       : String(v)}
@@ -307,7 +350,7 @@ function Detail({ id, onBack }) {
           <div className="border border-rule bg-surface p-4">
             <Label>After clarification</Label>
             {o.clarifications.length === 0
-              ? <p className="mt-2 text-[14px] text-muted">No clarifications were needed.</p>
+              ? <p className="mt-2 text-[14px] text-muted">No clarification has been recorded.</p>
               : <ul className="mt-2 space-y-3">
                   {o.clarifications.map((cl, i) => (
                     <li key={i}>
@@ -325,8 +368,10 @@ function Detail({ id, onBack }) {
         </div>
       </section>
 
-      <section className="border-t-[3px] border-ink pt-4">
-        <h3 className="heading-2">Your assessment</h3>
+      </div>
+      <section className="review-form">
+        <span className="meta meta-stage text-faint">Named human review</span>
+        <h3 className="heading-2 mt-2">Your assessment</h3>
         <p className="mt-1.5 text-[14px] leading-[20px] text-muted text-pretty">
           Recorded as your attributed judgement, with your name against it — not as
           ground truth. Another reviewer may reach a different conclusion.
@@ -352,10 +397,16 @@ function Detail({ id, onBack }) {
               className={`mt-1.5 w-full ${R} border border-edge bg-surface px-4 py-3 body-1
                           focus:border-ink`} />
           </label>
+          <label className="flex items-start gap-3 border border-rule p-3 rounded-[6px]">
+            <input type="checkbox" className="mt-1 h-5 w-5 accent-ink shrink-0" checked={approvedForSummary} onChange={e => setApprovedForSummary(e.target.checked)} />
+            <span className="body-2"><strong className="block text-ink">Include this observation in the site summary</strong>Approve this version for the evidence summary and export. This does not confirm a diagnosis or water safety.</span>
+          </label>
+          {o.review && <div role="status" className="body-2 border border-rule p-3"><strong>Assessment recorded</strong><p className="mt-1">{o.review.decision} — {o.review.reviewer}</p><p className="mt-1">{data.summary_eligibility?.eligible ? 'Approved for the site summary.' : 'Not currently included in the site summary.'}</p>{data.summary_eligibility?.eligible && <a className="inline-block underline mt-2 py-2" href={`/api/observations/${id}/export`} download>Download evidence record ↗</a>}</div>}
           {error && (
             <div role="alert" className={`${R} border-2 border-ink bg-surface p-3.5`}>
               <p className="question">Could not save your assessment</p>
               <p className="body-2 mt-1 text-muted">{error} — your text above has been kept.</p>
+              <button type="button" className="secondary-button mt-3" onClick={() => getObservation(id).then(fresh => { setData(fresh); setApprovedForSummary(false); setError(null) }).catch(e => setError(e.message))}>Refresh the evidence</button>
             </div>
           )}
           <button onClick={save} disabled={!reviewer.trim() || !decision.trim() || savingReview}
@@ -364,6 +415,7 @@ function Detail({ id, onBack }) {
           </button>
         </div>
       </section>
+      </div>
     </div>
   )
 }

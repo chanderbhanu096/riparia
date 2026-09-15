@@ -45,12 +45,23 @@ export async function getObservation(id) {
   return r.json()
 }
 
-export async function submitReview(id, { reviewer, decision, note }) {
+export async function submitReview(id, { reviewer, decision, note, approvedForSummary = false, reviewedContentSha256 }) {
   const fd = new FormData()
   fd.append('reviewer', reviewer)
   fd.append('decision', decision)
   fd.append('note', note || '')
+  fd.append('approved_for_summary', String(approvedForSummary))
+  if (reviewedContentSha256) fd.append('reviewed_content_sha256', reviewedContentSha256)
   const r = await fetch(`/api/observations/${id}/review`, { method: 'POST', body: fd })
-  if (!r.ok) throw new Error(`review failed (${r.status})`)
+  if (!r.ok) {
+    const detail = await r.json().catch(() => ({}))
+    throw new Error(detail.detail || `Could not save review (${r.status})`)
+  }
+  return r.json()
+}
+
+export async function getSites(recordClass = 'authentic') {
+  const r = await fetch(`/api/sites?record_class=${encodeURIComponent(recordClass)}`)
+  if (!r.ok) throw new Error(`Could not load site summaries (${r.status})`)
   return r.json()
 }

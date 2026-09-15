@@ -1,11 +1,46 @@
 import { useEffect, useState } from 'react'
 import { getQueue, getObservation, submitReview } from './api'
 
-const URGENCY = {
-  high:   'bg-red-100 text-red-900 border-red-300',
-  medium: 'bg-amber-100 text-amber-900 border-amber-300',
-  low:    'bg-stream-100 text-stream-900 border-stream-300',
+// The reviewer surfaces are an information system, not a newspaper (AUDIT.md D-028).
+// Bodoni appears on the page title and nowhere else; rows are hairline-ruled and
+// column-aligned; nothing is inverted or shouted.
+//
+// Three rules this file exists to keep:
+//   1. Consequence, completeness and review status stay THREE SEPARATE, text-labelled
+//      things. Merging them into one badge would rebuild the single trust score
+//      D-012 removed.
+//   2. Ecological urgency never wears the citizen precaution's red, and is always
+//      phrased as POTENTIAL consequence -- it is a triage judgement about whether a
+//      person should look, not an ecological classification and not a verdict.
+//   3. Routine reports look routine.
+
+const CONSEQUENCE = {
+  high:   { label: 'High',   dot: 'bg-ochre',  text: 'text-ochre font-semibold' },
+  medium: { label: 'Medium', dot: 'bg-faint',  text: 'text-muted' },
+  low:    { label: 'Low',    dot: 'bg-rule',   text: 'text-faint' },
 }
+
+const STATUS = {
+  not_reviewed:      'Not yet reviewed',
+  in_review:         'In review',
+  reviewer_assessed: 'Reviewer assessed',
+}
+
+// Field keys are internal identifiers, not copy.
+const pretty = k => k.replace(/_/g, ' ')
+
+const Label = ({ children }) => (
+  <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-faint">{children}</span>
+)
+
+// D-015: the three record classes stay visibly separate, everywhere. A judge must
+// never have to wonder whether a record on screen is real.
+const ClassTag = ({ cls }) => cls === 'authentic' ? null : (
+  <span className="border border-rule px-1.5 py-0.5 text-[11px] font-semibold
+                   uppercase tracking-[0.1em] text-faint">
+    {cls === 'synthetic' ? 'simulated' : 'evaluation case'}
+  </span>
+)
 
 export default function Review() {
   const [queue, setQueue] = useState(null)
@@ -15,73 +50,72 @@ export default function Review() {
   const load = () => getQueue().then(setQueue).catch(e => setError(e.message))
   useEffect(() => { load() }, [])
 
-  if (error) return <p role="alert" className="text-red-700">{error}</p>
-  if (!queue) return <p className="text-stream-700">Loading queue…</p>
+  if (error) return <p role="alert" className="border-2 border-alarm bg-alarm-bg px-3 py-2.5 text-alarm">{error}</p>
+  if (!queue) return <p className="text-muted">Loading queue…</p>
   if (openId) return <Detail id={openId} onBack={() => { setOpenId(null); load() }} />
 
   return (
     <div className="space-y-5">
-      <header>
-        <h2 className="text-2xl font-semibold text-stream-900">Review queue</h2>
-        <p className="text-stream-700 mt-1">
-          Ordered by <strong>what a review could change</strong>, not by arrival time.
-          An uncertain report of something serious sits above a tidy report of
-          nothing much — because that is where your time changes an outcome.
+      <div>
+        <h2 className="font-display text-[28px] leading-[30px] font-bold">Review queue</h2>
+        <p className="mt-2 text-[15px] leading-[21px] text-muted text-pretty">
+          Ordered by what a review could change, not by arrival time. An uncertain
+          report of something serious sits above a tidy report of nothing much,
+          because that is where your time changes an outcome.
         </p>
-        <p className="text-stream-700 mt-2 text-sm">
-          Expert attention is the scarce resource in citizen science. This queue
-          spends it deliberately.
-        </p>
-      </header>
+      </div>
 
       {queue.items.length === 0 && (
-        <p className="text-stream-700">Nothing waiting. Submit an observation first.</p>
+        <p className="border border-rule bg-surface px-4 py-3 text-[15px] text-muted">
+          Nothing waiting. Submit an observation first.
+        </p>
       )}
 
-      <ul className="space-y-3">
-        {queue.items.map(i => (
-          <li key={i.id}>
-            <button onClick={() => setOpenId(i.id)}
-              className="w-full text-left rounded-lg border border-stream-300 p-4
-                         hover:bg-stream-50">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-medium text-stream-900">
-                    {i.site_name || 'Unnamed reach'}
-                  </p>
-                  <p className="text-sm text-stream-700 mt-0.5">
-                    {i.assessment.triage.rationale}
-                  </p>
-                </div>
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium
-                                    ${URGENCY[i.assessment.ecological_urgency.level]}`}>
-                    {i.assessment.ecological_urgency.level} consequence
-                  </span>
-                  {i.record_class !== 'authentic' && <SyntheticTag cls={i.record_class} />}
-                  {i.review_status !== 'not_reviewed' && (
-                    <span className="text-xs text-stream-600">
-                      {i.review_status.replace('_', ' ')}
+      <ul className="border-t border-rule">
+        {queue.items.map(i => {
+          const a = i.assessment
+          const c = CONSEQUENCE[a.ecological_urgency.level]
+          const open = a.completeness.missing.length + a.completeness.marked_unsure.length
+                     + a.detected_inconsistency.length
+                     + (a.ecological_urgency.unresolved_indicators?.length || 0)
+          return (
+            <li key={i.id} className="border-b border-rule">
+              <button onClick={() => setOpenId(i.id)}
+                className="flex w-full items-start gap-4 bg-surface px-4 py-3.5 text-left
+                           hover:bg-ground">
+                <span className={`mt-2 h-2.5 w-2.5 shrink-0 ${c.dot}`} aria-hidden="true" />
+                <span className="min-w-0 flex-1">
+                  <span className="flex flex-wrap items-baseline gap-2">
+                    <span className="text-[16px] font-semibold leading-[21px]">
+                      {i.site_name || 'Unnamed reach'}
                     </span>
-                  )}
-                </div>
-              </div>
-            </button>
-          </li>
-        ))}
+                    <ClassTag cls={i.record_class} />
+                  </span>
+                  <span className="mt-1 block text-[13.5px] leading-[19px] text-muted text-pretty">
+                    {a.triage.rationale}
+                  </span>
+                  {/* three separate, labelled facts -- never one merged badge */}
+                  <span className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
+                    <span className="text-[12.5px] leading-[17px]">
+                      <Label>Potential consequence</Label>{' '}
+                      <span className={c.text}>{c.label}</span>
+                    </span>
+                    <span className="text-[12.5px] leading-[17px]">
+                      <Label>Open points</Label>{' '}
+                      <span className="text-muted">{open || 'none'}</span>
+                    </span>
+                    <span className="text-[12.5px] leading-[17px]">
+                      <Label>Status</Label>{' '}
+                      <span className="text-muted">{STATUS[i.review_status]}</span>
+                    </span>
+                  </span>
+                </span>
+              </button>
+            </li>
+          )
+        })}
       </ul>
     </div>
-  )
-}
-
-// D-015: the three record classes stay visibly separate, everywhere, always.
-// A judge must never have to wonder whether a record on screen is real.
-function SyntheticTag({ cls }) {
-  return (
-    <span className="rounded-full border border-purple-300 bg-purple-100 px-2.5 py-0.5
-                     text-xs font-medium text-purple-900">
-      {cls === 'synthetic' ? 'simulated record' : 'evaluation case'}
-    </span>
   )
 }
 
@@ -93,10 +127,13 @@ function Detail({ id, onBack }) {
   const [error, setError] = useState(null)
 
   useEffect(() => { getObservation(id).then(setData).catch(e => setError(e.message)) }, [id])
-  if (error) return <p role="alert" className="text-red-700">{error}</p>
-  if (!data) return <p className="text-stream-700">Loading…</p>
+  if (error) return <p role="alert" className="border-2 border-alarm bg-alarm-bg px-3 py-2.5 text-alarm">{error}</p>
+  if (!data) return <p className="text-muted">Loading…</p>
 
   const { observation: o, assessment: a } = data
+  const u = a.ecological_urgency
+  const c = CONSEQUENCE[u.level]
+  const resolved = Object.entries(u.resolved || {})
 
   async function save() {
     try { setData(await submitReview(id, { reviewer, decision, note })) }
@@ -105,93 +142,95 @@ function Detail({ id, onBack }) {
 
   return (
     <div className="space-y-6">
-      <button onClick={onBack} className="text-stream-600 underline">← Back to queue</button>
+      <button onClick={onBack} className="text-[13px] font-semibold uppercase
+                                          tracking-[0.14em] text-muted hover:text-ink">
+        ← Back to queue
+      </button>
 
-      <div className="flex items-start justify-between gap-3">
-        <h2 className="text-2xl font-semibold text-stream-900">
-          {o.site_name || 'Unnamed reach'}
-        </h2>
-        {o.record_class !== 'authentic' && <SyntheticTag cls={o.record_class} />}
-      </div>
-
-      <div className="rounded-lg border border-stream-300 bg-stream-50 p-4">
-        <p className="text-xs font-medium uppercase tracking-wide text-stream-600">
-          Why this is in front of you
+      <div className="border-b-[3px] border-ink pb-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h2 className="font-display text-[26px] leading-[29px] font-bold">
+            {o.site_name || 'Unnamed reach'}
+          </h2>
+          <ClassTag cls={o.record_class} />
+        </div>
+        <p className="mt-2 text-[14.5px] leading-[20px] text-muted text-pretty">
+          <Label>Why this is in front of you</Label> {a.triage.rationale}
         </p>
-        <p className="mt-1 text-stream-900">{a.triage.rationale}</p>
       </div>
 
-      {o.photo_path && <img src={o.photo_path} alt="Submitted stream photo"
-        className="max-h-72 rounded-lg border border-stream-300" />}
-
-      {/* Four dimensions, shown SEPARATELY. There is deliberately no combined
-          score anywhere in this UI (AUDIT.md D-012). */}
-      <section className="grid gap-3 sm:grid-cols-2">
-        <Card title="Ecological urgency"
-              sub="Could this matter, if it is accurate? Not reduced when a record is uncertain.">
-          <span className={`inline-block rounded-full border px-2.5 py-0.5 text-sm
-                            font-medium ${URGENCY[a.ecological_urgency.level]}`}>
-            {a.ecological_urgency.level}
-          </span>
-          <ul className="mt-2 text-sm text-stream-700 list-disc pl-5">
-            {a.ecological_urgency.reasons.map((r, i) => <li key={i}>{r}</li>)}
+      {/* The four dimensions, kept separate and labelled. No combined score exists
+          anywhere in this system (AUDIT.md D-012). */}
+      <dl className="border-t border-rule">
+        <Row label="Potential consequence"
+             hint="Whether a person should look, and how soon. Not reduced when a record is uncertain, and not an ecological classification.">
+          <span className={`${c.text} text-[15px]`}>{c.label}</span>
+          <ul className="mt-1.5 space-y-1">
+            {u.reasons.map((r, i) => (
+              <li key={i} className="text-[14px] leading-[20px] text-muted text-pretty">{r}</li>
+            ))}
           </ul>
-        </Card>
+        </Row>
 
-        <Card title="Completeness" sub="What was recorded. Blanks are gaps, not mistakes.">
-          <p className="text-stream-900">
+        <Row label="Completeness" hint="What was recorded. Blanks are gaps, not mistakes.">
+          <span className="text-[15px]">
             {a.completeness.answered} of {a.completeness.total} fields answered
-          </p>
+          </span>
           {a.completeness.marked_unsure.length > 0 && (
-            <p className="mt-1 text-sm text-stream-700">
-              Marked “not sure”: {a.completeness.marked_unsure.join(', ')}
+            <p className="mt-1 text-[14px] leading-[20px] text-muted">
+              Marked “not sure”: {a.completeness.marked_unsure.map(pretty).join(', ')}
             </p>
           )}
           {a.completeness.missing.length > 0 && (
-            <p className="mt-1 text-sm text-stream-700">
-              Not recorded: {a.completeness.missing.join(', ')}
+            <p className="mt-1 text-[14px] leading-[20px] text-muted">
+              Not recorded: {a.completeness.missing.map(pretty).join(', ')}
             </p>
           )}
-        </Card>
+        </Row>
 
-        <Card title="Points raised with the citizen"
-              sub="Questions asked, never corrections applied.">
+        <Row label="Points raised with the citizen" hint="Questions asked, never corrections applied.">
           {a.detected_inconsistency.length === 0
-            ? <p className="text-sm text-stream-700">None.</p>
-            : <ul className="text-sm text-stream-700 list-disc pl-5">
-                {a.detected_inconsistency.map(t => <li key={t.id}>{t.question}</li>)}
+            ? <span className="text-[14px] text-muted">None.</span>
+            : <ul className="space-y-1">
+                {a.detected_inconsistency.map(t => (
+                  <li key={t.id} className="text-[14px] leading-[20px] text-muted text-pretty">{t.question}</li>
+                ))}
               </ul>}
-        </Card>
+        </Row>
 
-        <Card title="Review status" sub="Only a named person can change this.">
-          <p className="text-stream-900">{a.review_status.replace('_', ' ')}</p>
+        <Row label="Review status" hint="Only a named person can change this.">
+          <span className="text-[15px]">{STATUS[a.review_status]}</span>
           {o.review && (
-            <p className="mt-1 text-sm text-stream-700">
+            <p className="mt-1 text-[14px] leading-[20px] text-muted text-pretty">
               {o.review.decision} — <em>{o.review.reviewer}</em>
             </p>
           )}
-        </Card>
-      </section>
+        </Row>
+      </dl>
 
-      {/* What the citizen's own field answers resolved to. This is the section that
-          shows the system working as intended: a person answered a field question
-          and it changed the reading -- no model decided anything. */}
-      {Object.keys(a.ecological_urgency.resolved || {}).length > 0 && (
+      {o.photo_path && (
+        <div>
+          <Label>Photograph</Label>
+          <img src={o.photo_path} alt="Submitted stream photo"
+               className="mt-1.5 max-h-72 border border-rule" />
+        </div>
+      )}
+
+      {resolved.length > 0 && (
         <section>
-          <h3 className="text-lg font-semibold text-stream-900">
+          <h3 className="font-display text-[19px] leading-[23px] font-bold">
             What the citizen's field answers resolved
           </h3>
-          <ul className="mt-2 space-y-2">
-            {Object.entries(a.ecological_urgency.resolved).map(([ind, r]) => (
-              <li key={ind} className="rounded-lg border border-stream-300 p-3">
+          <ul className="mt-2 border-t border-rule">
+            {resolved.map(([ind, r]) => (
+              <li key={ind} className="border-b border-rule bg-surface px-4 py-3">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm text-stream-900">{r.explain}</p>
-                  <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs
-                                    font-medium ${URGENCY[r.urgency]}`}>
-                    {r.urgency}
+                  <p className="text-[14.5px] leading-[20px] text-pretty">{r.explain}</p>
+                  <span className={`shrink-0 text-[12.5px] ${CONSEQUENCE[r.urgency].text}`}>
+                    {CONSEQUENCE[r.urgency].label}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-stream-700">
+                <p className="mt-1 text-[12.5px] leading-[17px] text-faint">
                   {r.reading === 'unresolved'
                     ? 'Not narrowed down — held at the highest reading it could be.'
                     : `Resolved by the citizen on site → ${r.reading.replace(/_/g, ' ')}`}
@@ -202,74 +241,68 @@ function Detail({ id, onBack }) {
         </section>
       )}
 
-      {a.ecological_urgency.one_health_notes?.length > 0 && (
-        <section className="rounded-lg border border-amber-300 bg-amber-50 p-4">
-          <h3 className="font-semibold text-amber-900">
+      {u.one_health_notes?.length > 0 && (
+        <section className="border-2 border-alarm bg-alarm-bg p-4">
+          <h3 className="text-[13px] font-bold uppercase tracking-[0.14em] text-alarm">
             Precaution already given to the citizen
           </h3>
-          <ul className="mt-2 space-y-1 text-sm text-amber-900 list-disc pl-5">
-            {a.ecological_urgency.one_health_notes.map((n, i) => <li key={i}>{n}</li>)}
+          <ul className="mt-2 space-y-1.5">
+            {u.one_health_notes.map((n, i) => (
+              <li key={i} className="text-[14.5px] leading-[20px] text-pretty">{n}</li>
+            ))}
           </ul>
-          <p className="mt-2 text-xs text-amber-900">
+          <p className="mt-2 text-[12.5px] leading-[17px] text-muted text-pretty">
             Issued immediately on the citizen's own answer, before any review. If you
             disagree, say so in your assessment — they should be told.
           </p>
         </section>
       )}
 
-      {/* Model output, shown with its reliability stated. A reviewer must be able
-          to see what the model said AND that it is not dependable -- hiding either
-          would be worse than not showing it at all (AUDIT.md D-023). */}
+      {/* Model output, shown with its reliability stated. Hiding either the note or
+          the caveat would be worse than not showing it (AUDIT.md D-023). */}
       {o.photo_findings?.model_description && (
-        <section className="rounded-lg border border-stream-300 p-4">
-          <h3 className="font-semibold text-stream-900">Automated photo note</h3>
-          <p className="mt-1 text-sm text-stream-900 italic">
+        <section className="border border-rule bg-surface p-4">
+          <Label>Automated photo note</Label>
+          <p className="mt-1.5 text-[14.5px] leading-[20px] italic text-pretty">
             “{o.photo_findings.model_description}”
           </p>
-          <p className="mt-2 text-xs text-stream-700">
+          <p className="mt-2 text-[12.5px] leading-[17px] text-muted text-pretty">
             Advisory only. This model has been observed describing detail that is not
             present in an image. It is used solely to raise questions for the citizen
-            and has no effect on urgency, on the record, or on your decision.
+            and has no effect on consequence, on the record, or on your decision.
           </p>
         </section>
       )}
 
-      {/* The heart of the demo (D-015): what was first said, beside what was said
-          after being prompted. The difference between those two is the product. */}
       <section>
-        <h3 className="text-lg font-semibold text-stream-900">
+        <h3 className="font-display text-[19px] leading-[23px] font-bold">
           What the citizen reported
         </h3>
         <div className="mt-2 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-lg border border-stream-300 p-4">
-            <p className="text-sm font-medium text-stream-600 uppercase tracking-wide">
-              Original answers
-            </p>
-            <dl className="mt-2 space-y-1 text-sm">
+          <div className="border border-rule bg-surface p-4">
+            <Label>Original answers</Label>
+            <dl className="mt-2 space-y-1">
               {Object.entries(o.answers).map(([k, v]) => (
-                <div key={k} className="flex gap-2">
-                  <dt className="text-stream-700">{k.replace(/_/g, ' ')}:</dt>
-                  <dd className="text-stream-900 font-medium">
+                <div key={k} className="flex gap-2 text-[14px] leading-[20px]">
+                  <dt className="text-muted">{pretty(k)}:</dt>
+                  <dd className="font-medium">
                     {Array.isArray(v) ? (v.join(', ') || 'none selected') : String(v)}
                   </dd>
                 </div>
               ))}
             </dl>
           </div>
-          <div className="rounded-lg border border-stream-300 p-4">
-            <p className="text-sm font-medium text-stream-600 uppercase tracking-wide">
-              After clarification
-            </p>
+          <div className="border border-rule bg-surface p-4">
+            <Label>After clarification</Label>
             {o.clarifications.length === 0
-              ? <p className="mt-2 text-sm text-stream-700">No clarifications were needed.</p>
-              : <ul className="mt-2 space-y-3 text-sm">
-                  {o.clarifications.map((c, i) => (
+              ? <p className="mt-2 text-[14px] text-muted">No clarifications were needed.</p>
+              : <ul className="mt-2 space-y-3">
+                  {o.clarifications.map((cl, i) => (
                     <li key={i}>
-                      <p className="text-stream-700">{c.question}</p>
-                      <p className="text-stream-900 font-medium mt-0.5">{c.response}</p>
-                      {c.citizen_disagrees && (
-                        <p className="mt-1 inline-block rounded bg-stream-100 px-2 py-0.5
-                                      text-xs text-stream-900">
+                      <p className="text-[13.5px] leading-[19px] text-muted text-pretty">{cl.question}</p>
+                      <p className="mt-0.5 text-[14px] font-medium leading-[20px] text-pretty">{cl.response}</p>
+                      {cl.citizen_disagrees && (
+                        <p className="mt-1 text-[12.5px] font-semibold text-ink">
                           Citizen stood by their original answer
                         </p>
                       )}
@@ -280,44 +313,51 @@ function Detail({ id, onBack }) {
         </div>
       </section>
 
-      <section className="rounded-lg border border-stream-300 p-4 space-y-3">
-        <h3 className="text-lg font-semibold text-stream-900">Your assessment</h3>
-        <p className="text-sm text-stream-700">
+      <section className="border-t-[3px] border-ink pt-4">
+        <h3 className="font-display text-[19px] leading-[23px] font-bold">Your assessment</h3>
+        <p className="mt-1.5 text-[14px] leading-[20px] text-muted text-pretty">
           Recorded as your attributed judgement, with your name against it — not as
           ground truth. Another reviewer may reach a different conclusion.
         </p>
-        <label className="block">
-          <span className="text-sm font-medium text-stream-900">Your name and role</span>
-          <input value={reviewer} onChange={e => setReviewer(e.target.value)}
-            placeholder="e.g. A. Ferreira, freshwater ecology"
-            className="mt-1 w-full rounded-lg border border-stream-300 px-3 py-2" />
-        </label>
-        <label className="block">
-          <span className="text-sm font-medium text-stream-900">Decision</span>
-          <input value={decision} onChange={e => setDecision(e.target.value)}
-            placeholder="e.g. escalate for site visit / usable as reported / needs resampling"
-            className="mt-1 w-full rounded-lg border border-stream-300 px-3 py-2" />
-        </label>
-        <label className="block">
-          <span className="text-sm font-medium text-stream-900">Reasoning</span>
-          <textarea rows={3} value={note} onChange={e => setNote(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-stream-300 px-3 py-2" />
-        </label>
-        <button onClick={save} disabled={!reviewer.trim() || !decision.trim()}
-          className="rounded-lg bg-stream-600 px-4 py-2.5 text-white disabled:opacity-60">
-          Record my assessment
-        </button>
+        <div className="mt-3 space-y-3">
+          <label className="block">
+            <span className="text-[14px] font-semibold">Your name and role</span>
+            <input value={reviewer} onChange={e => setReviewer(e.target.value)}
+              placeholder="e.g. A. Ferreira, freshwater ecology"
+              className="mt-1 w-full border border-rule bg-surface px-3 py-2.5 text-[15px]
+                         placeholder:text-faint" />
+          </label>
+          <label className="block">
+            <span className="text-[14px] font-semibold">Decision</span>
+            <input value={decision} onChange={e => setDecision(e.target.value)}
+              placeholder="e.g. escalate for site visit / usable as reported / needs resampling"
+              className="mt-1 w-full border border-rule bg-surface px-3 py-2.5 text-[15px]
+                         placeholder:text-faint" />
+          </label>
+          <label className="block">
+            <span className="text-[14px] font-semibold">Reasoning</span>
+            <textarea rows={3} value={note} onChange={e => setNote(e.target.value)}
+              className="mt-1 w-full border border-rule bg-surface px-3 py-2.5 text-[15px]" />
+          </label>
+          <button onClick={save} disabled={!reviewer.trim() || !decision.trim()}
+            className="min-h-11 bg-ink px-5 py-2.5 text-[13px] font-bold uppercase
+                       tracking-[0.16em] text-ground disabled:opacity-60">
+            Record my assessment
+          </button>
+        </div>
       </section>
     </div>
   )
 }
 
-function Card({ title, sub, children }) {
+function Row({ label, hint, children }) {
   return (
-    <div className="rounded-lg border border-stream-300 p-4">
-      <h3 className="font-semibold text-stream-900">{title}</h3>
-      <p className="text-xs text-stream-700 mt-0.5 mb-2">{sub}</p>
-      {children}
+    <div className="grid gap-1 border-b border-rule py-3 sm:grid-cols-[minmax(0,13rem)_1fr] sm:gap-4">
+      <dt>
+        <Label>{label}</Label>
+        <p className="mt-0.5 text-[12px] leading-[16px] text-faint text-pretty">{hint}</p>
+      </dt>
+      <dd>{children}</dd>
     </div>
   )
 }

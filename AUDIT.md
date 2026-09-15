@@ -528,6 +528,30 @@ Colour is the first thing a person matches, and we had thrown it away in the ver
 
 - **Canvas:** https://claude.ai/artifact/Gg5A9vHAgoTA2GZWvZftzd
 
+### D-028 — Direction chosen: Broadsheet. Building it through all three surfaces
+- **Date:** 2026-09-15 · **Status:** ACTIVE · **Closes:** the design question opened in D-026/D-027
+- **Owner's decision, verbatim:** *"let's go with 3"* — Broadsheet. Both the independent GPT review and my own revised recommendation agreed, so this is settled and will not be reopened.
+- **Design system now fixed** (tokens in `frontend/src/index.css`, one home):
+  | Token | Value | Rule |
+  |---|---|---|
+  | ground | `#f3f0e7` newsprint | page |
+  | surface | `#ffffff` | cards, rows |
+  | ink | `#15120e` | all primary text |
+  | rule | `#cdc5b4` | hairlines; `3px solid ink` for the masthead rule only |
+  | muted | `#4a4137` / `#6d6354` | secondary text, both ≥ 4.5:1 on ground |
+  | **red** | `#b02d18` | **the citizen precaution, and nothing else** |
+  | ochre | `#8a5214` | ecological urgency — deliberately NOT the precaution red |
+  | algae / cyano / fungus | `#3f6b24` / `#137a72` / `#7e7d74` | specimen diagnostic colours |
+  | display | Bodoni Moda | masthead and page title only |
+  | text | Archivo | everything a person actually reads |
+- **Guardrails carried from the GPT review into the reviewer surfaces** (F3/F4 of `DESIGN_VERDICT_GPT.md`):
+  1. **Extend it as an information system, not a newspaper poster.** Bodoni for the masthead and one heavy rule; **no 33px headlines and no black panels repeated in every queue row.**
+  2. **Consequence, completeness and review status stay three separate, text-labelled things** — never merged into one badge. This is D-012's four dimensions surviving into the visual layer.
+  3. **Urgency never wears the precaution's red**, and never reads as a verdict. It is rendered in ochre and always phrased as *potential* consequence, because an ecological classification is not ours to make and a reviewer's decision is not ours to pre-empt.
+  4. **Routine states look routine.** Broadsheet's own failure mode is making every report look like an emergency.
+- **Specimen drawings ported into the app** as `frontend/src/Specimens.jsx`, extended beyond green growth to the sheen shatter test and foam character so the feature is consistent wherever a differential exists. Where no drawing exists the option renders as text alone — never a placeholder.
+- **Labelled as schematic aids, not identification plates**, in the UI as well as the canvas (D-027).
+
 ---
 
 ## 2. Implementation plan — REVISED per D-013 (real dates, ethical core first)
@@ -681,6 +705,7 @@ credible delivery; not the most elaborate architecture, and never guessed entran
 |---|---|---|
 | 2026-09-14 21:55 CEST | Claude (Opus 5) | File created. D-001…D-009 recorded. Track 3 selected over owner's initial Track 2 preference, with reversal path D-003. |
 | 2026-09-14 22:05 CEST | Codex (GPT) via `duet` | Adversarial strategy review, run `20260914-215657-dbebe6`. Verdict **revise**, 8 findings. Earlier run `20260914-215306-6baadf` discarded (inverted roles, placeholder output). |
+| 2026-09-15 07:40 CEST | Claude (Opus 5) | **D-028** owner chose **Broadsheet**. Design system tokenised; specimens ported to React and extended to the sheen and foam differentials; reviewer-surface guardrails fixed (urgency never wears the precaution red, the three dimensions stay separate and text-labelled, no black panels per queue row). |
 | 2026-09-15 07:00 CEST | Claude (Opus 5) | **D-027** recommendation reversed to **Broadsheet** after Codex picked it and rejected Cyanotype. Decisive: the options name colours and every direction drew them in one ink — and a cyanotype is monochrome by process, so its concept forbids the most diagnostic feature. Specimens now coloured. Five corrections applied. A 16px body pushed the artboard 89px over frame and clipped the safety copy; caught by measuring in-browser, fixed to exactly 844. |
 | 2026-09-15 01:05 CEST | Claude (Opus 5) | **D-026** visual direction. Anna Atkins' 1843 cyanotypes of British algae — published because text descriptions could not identify algae — reframed the differential: draw the specimens rather than describe them. Three bold directions published; three conservative ones dropped. Copy and specimen geometry centralised so parity is structural; a11y floors enforced in the generator after a review found 10.5px labels and the urgency line set in the smallest type on screen. |
 | 2026-09-15 00:10 CEST | Claude (Opus 5) | **P3 complete** (reviewer detail: triage rationale, resolved field answers, One Health precaution, model note shown *with* its unreliability stated). **D-024** modular restructure into domain/adapters/api + composition root; fixed a re-export that shadowed a module. **D-025** shipped: public repo + live Azure App Service on the existing B1 plan; secret scans clean before both push and deploy. |

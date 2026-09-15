@@ -193,7 +193,8 @@ def ecological_urgency(answers: dict[str, Any],
         resolved[ind] = {"reading": r["reading"], "urgency": r["urgency"],
                          "explain": r["explain"], "one_health": r.get("one_health")}
         label = fp.INDICATORS.get(ind, {}).get("label", ind)
-        if r["reading"] == "unresolved":
+        askable = bool(fp.differential_for(ind))
+        if r["reading"] == "unresolved" and askable:
             reasons.append(f"{label} — not yet narrowed down")
         else:
             reasons.append(f"{label} — {r['explain']}")
@@ -218,7 +219,8 @@ def ecological_urgency(answers: dict[str, Any],
         "resolved": resolved,
         "one_health_notes": one_health,
         "unresolved_indicators": [r["indicator"] for r in readings
-                                  if r.get("reading") == "unresolved"],
+                                  if r.get("reading") == "unresolved"
+                                  and fp.differential_for(r.get("indicator", ""))],
         "note": (
             "A triage judgement about whether a person should look, and how soon. "
             "Not an ecological status classification, and deliberately not reduced "

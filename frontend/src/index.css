@@ -1,17 +1,49 @@
 @import "tailwindcss";
 
+/* Broadsheet (AUDIT.md D-028). A field observation sheet: newsprint ground, one
+   display face for the masthead, a sans for everything a person actually reads,
+   and one red held back for the citizen precaution.
+
+   The red rule is not decorative. Ecological urgency must never wear the same
+   colour as a safety instruction, or a routine report starts to look like an
+   emergency and a triage judgement starts to look like a verdict. */
 @theme {
-  --color-stream-50:  #f0f7f7;
-  --color-stream-100: #d9ebec;
-  --color-stream-300: #8cbcc0;
-  --color-stream-600: #2f6f76;
-  --color-stream-700: #245358;
-  --color-stream-900: #12292c;
+  --color-ground:  #f3f0e7;
+  --color-surface: #ffffff;
+  --color-ink:     #15120e;
+  --color-muted:   #4a4137;
+  --color-faint:   #6d6354;
+  --color-rule:    #cdc5b4;
+
+  --color-alarm:   #b02d18;  /* the citizen precaution. Nothing else. */
+  --color-alarm-bg:#fbf1ee;
+  --color-ochre:   #8a5214;  /* ecological urgency. Deliberately not the alarm. */
+  --color-ochre-bg:#f8f1e4;
+
+  /* specimen diagnostic colours -- the options name these, so the drawings carry them */
+  --color-algae:   #3f6b24;
+  --color-cyano:   #137a72;
+  --color-fungus:  #7e7d74;
+
+  --font-display: "Bodoni Moda", Georgia, serif;
+  --font-sans: Archivo, ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background: var(--color-ground);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Visible focus everywhere. Accessibility is 15% of the score and is never
    traded away (AUDIT.md D-019). */
 :focus-visible {
-  outline: 3px solid var(--color-stream-600);
+  outline: 3px solid var(--color-ink);
   outline-offset: 2px;
+}
+
+/* Respect a reader who has asked for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }

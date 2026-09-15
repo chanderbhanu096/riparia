@@ -822,6 +822,50 @@ The "Let me update that" button stored the literal sentence *"Citizen updated th
 - **Live verification:** public shell matches `index-a93AXrZU.js` / `index-BJBnMzlj.css`; all seven existing observation objects compare unchanged. `/api/sites` returns JSON and the public browser loads the redesigned checklist and summary without console errors.
 - **Verification:** 12 isolated HTTP tests and 39 assessment checks; migration rehearsal confirms exact row/photo preservation, old write freeze, new database writes, and rollback unfreeze. Frontend build/lint and browser smoke checks pass. This remains a web prototype, not an installable offline PWA or a production identity/retention system.
 
+### D-035 — ADR: the role boundary is two surfaces in one deployment, with no identity layer
+- **Date:** 2026-09-15 · **Status:** ACCEPTED · **Deciders:** owner · **Amends:** nothing — this records a decision taken implicitly at P1 and never written down
+- **Trigger:** owner asked whether the hackathon brief dictates the interface shape (one interface for logging and reviewing, or two).
+
+**Context — the brief does not decide this for us.**
+Track 3's stated direction is four words: *"AI prompts, validation checks, explainable AI, human-in-the-loop"* (§0.4). The deliverables (§0.3) name no screens, no roles and no interfaces. The shape is our choice and therefore ours to defend. Four forces act on it:
+
+1. **The product's claim is a boundary.** The citizen's answers are immutable (Rule 4), the model may only raise a question (Rule 5), and only a named human decides. If that boundary is not visible in the interface, "human-in-the-loop" is an assertion in a README rather than something a judge can watch happen.
+2. **A judge must cross the boundary themselves** — in one browser, inside a 3–5 minute video, with no credentials issued to them.
+3. **Solo student, deadline 2026-09-30, video not yet recorded.** Any option that adds a build phase competes directly with the one deliverable that does not yet exist.
+4. **There is no authentication anywhere in this system** — verified, not assumed: no auth, login, session or token handling in `backend/api/*.py` or `backend/main.py`. `POST /api/observations/{id}/review` accepts `reviewer` as a form field and trusts the string.
+
+**Decision.** Keep **two distinct surfaces in one deployment, with no identity layer, and label the absence inside the product.** [`Capture.jsx`](frontend/src/Capture.jsx) (field, one question at a time) and [`Review.jsx`](frontend/src/Review.jsx) (desk, dense queue) share design tokens and voice but not layout; [`App.jsx`](frontend/src/App.jsx) switches between them; `api/observations.py` and `api/review.py` are already separate routers.
+
+**Options considered.**
+
+| | **A — one shared interface, role-switched** | **B — two surfaces, one deployment, no identity** (chosen) | **C — two deployments, real identity boundary** |
+|---|---|---|---|
+| Complexity | Low | Low — already built | High: auth, sessions, roles, two builds, two pipelines |
+| Cost to the demo | None | None | Severe — a 3–5 min video would need two logins or a faked one |
+| Shows the loop | **No** — collapses the boundary into extra controls on one form | Yes — crossing it is one visible nav click | Yes, but only to someone holding both credentials |
+| Honest about identity | Implies a role system that does not exist | Yes — absence is stated in the UI | Yes, by construction |
+| Fit to the citizen's situation | Poor — a field form and a triage queue want opposite information density | Good | Good |
+| Path to a pilot | Dead end | Routing + auth change, not a rewrite | Is the pilot |
+
+**Trade-off analysis.**
+The decisive axis is not engineering cost — it is **what the artefact can prove on camera**. Option A is the cheapest and destroys the only thing worth showing: if logging and reviewing are one form with more buttons, the citizen's account and the reviewer's judgement stop being distinguishable, and Rule 4 becomes invisible. Option C is what a real pilot needs and cannot be demonstrated inside a 3–5 minute video without either shipping an identity layer we do not have time to do properly, or staging two logins — which would be claiming more than we can show (Rule 8). **B is the only option that both demonstrates the loop and tells the truth about what is missing.**
+
+The second axis is reversibility, and it is why B is not a corner cut. **B → C is a routing and deployment change, not a rewrite**, because the seam already exists in three places: separate API routers, separate frontend components, and — the load-bearing one — **an approval is already bound to the exact content the reviewer saw**, via `reviewed_content_sha256` (D-032). That binding is precisely the part a real identity layer would need to attach a verified person to. B is therefore C-minus-identity, not a different architecture.
+
+**Consequences.**
+- *Easier:* the demo. One browser, one nav click, capture → clarification → queue → attributed assessment, no login, no cuts.
+- *Easier:* the reviewer surface can be as dense as a coordinator needs without compromising legibility for someone holding a phone in daylight.
+- *Harder — accepted risk:* **anyone can act as a reviewer, and any name can be typed.** Attribution is self-declared and unverified.
+- *Harder:* no per-role data scoping. Any client can read `/api/queue`. Acceptable while the store holds simulated and owner-created demo records; **not acceptable for a pilot**, which would also bring GDPR duties on citizen location and photographs.
+- *To revisit before any pilot:* identity, per-role scoping, retention.
+
+**Action items.**
+1. [x] State the absence in the product — `Review.jsx` aside: *"Prototype role switch: names are self-declared. Reviewer identities are not verified."*
+2. [x] State it in the README (§ limitations, "Reviewer identity and record class are self-declared … there is no account authentication").
+3. [x] State it in `docs/SUBMISSION_DRAFT.md` (production authentication and identity verification listed as future work; a reviewer-entered name recorded as attribution, not verified professional identity).
+4. [ ] `docs/DEMO_SCRIPT.md` 2:10–2:40 currently says *"I am playing the reviewer for this demonstration."* Optional one-clause addition: *"and the prototype does not verify who a reviewer is."* Not a blocker — the role-play caveat already prevents the misreading that matters.
+5. [ ] No code change. This ADR exists to stop a future reader — or a future me — re-proposing a merged interface or a rushed auth layer before the video exists.
+
 ---
 
 ## 2. Implementation plan — REVISED per D-013 (real dates, ethical core first)
@@ -991,3 +1035,4 @@ credible delivery; not the most elaborate architecture, and never guessed entran
 
 | 2026-09-15 | Codex | **D-031–D-033:** full-width field-station design; P4 explicit-approval summaries and provenance export; practice mode and navigation preservation; storage and uncertainty fixes; six-case walkthrough, 4:25 video script, submission draft and action diagram. Verified newer official build dates and registration; actual video/submission remain outstanding. |
 | 2026-09-15 | Codex | **D-034:** persistent Azure runtime data and verified backup/deployment scripts; static-path containment; 12 HTTP contracts, 39 assessment checks and responsive browser checks pass. |
+| 2026-09-15 | Claude (Opus 5) | **D-035 (ADR):** role boundary recorded as two surfaces in one deployment with no identity layer. Alternatives (merged interface / two authenticated deployments) weighed and rejected against what the demo must prove. Verified no auth exists anywhere in `backend/`; confirmed the limitation is already stated in the UI, README and submission draft. No code change. |

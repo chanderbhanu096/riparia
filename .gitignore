@@ -7,7 +7,9 @@ backend/.env
 backend/.venv/
 __pycache__/
 *.pyc
+*.db
 backend/riparia.db
+backend/adapters/riparia.db
 backend/uploads/
 
 # node
@@ -24,3 +26,6 @@ frontend/dist/
 # vite starter assets, unused
 frontend/src/assets/
 frontend/public/icons.svg
+
+# scratch preview files produced by design/build.py
+design/_*.html

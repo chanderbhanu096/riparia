@@ -4,6 +4,12 @@
 > Any agent or human joining this work reads this file FIRST and reads nothing else
 > until they have read it end to end.
 >
+> **Arriving with no context — including in another tool such as Codex? Read
+> [§00 START HERE](#00-start-here--full-briefing-for-anyone-opening-this-cold)
+> first.** It is a complete standing briefing: the goal, every link, what exists,
+> how to run and deploy it, the rules that must not be broken, what is left, and
+> what has already been tried and rejected. It assumes no memory of any conversation.
+>
 > **Update protocol:** never delete an entry. Decisions are append-only. If a decision
 > is reversed, add a NEW decision that supersedes it and set the old one's
 > `Status: SUPERSEDED by D-0XX`. Append to §8 Changelog on every edit.
@@ -15,6 +21,189 @@
 | **Authoring agent** | Claude Code (Opus 5) |
 | **Review agent** | Codex / GPT (via `duet` skill) — see §7 |
 | **Status** | **P1–P3 complete. Live at https://riparia-oah.azurewebsites.net · repo https://github.com/chanderbhanu096/riparia · backend modularised (D-024). Next: P4 insight + export.** |
+
+---
+
+## 00. START HERE — full briefing for anyone opening this cold
+
+> **You are reading the single source of truth for this project.** This section is a
+> complete standing briefing: if you are a person or an agent (Claude, Codex, anything
+> else) arriving with no memory of the conversation that produced this work, everything
+> you need to act competently is below. Read §00 fully, then §0.2 (the rubric), then
+> §1b (D-010 onward). Do not propose anything before that.
+
+### 00.1 What this is, in one paragraph
+
+**RIPARIA** is a hackathon entry for the **OneAquaHealth IEEE Global Hackathon 2026**,
+submitted under **Track 3 — AI-Supported Assessment**. It is a web app for people who
+notice something wrong with an urban stream. The citizen reports what they can see; when
+they report something *ambiguous* — an oily sheen, foam, green growth — the app asks
+**one real field question** with **drawn options** (for example the shatter test, which
+separates harmless iron-oxidising bacteria from a petroleum spill), and the citizen's own
+answer resolves it on the spot. A **named human reviewer** then decides. The AI never
+scores the stream, never accepts, never rejects. It asks; a person answers; a person decides.
+
+### 00.2 Every link
+
+| What | Where |
+|---|---|
+| **Hackathon page (Devpost)** | https://oneaquahealth-ieee-hackathon.devpost.com/ |
+| Hackathon rules | https://oneaquahealth-ieee-hackathon.devpost.com/rules |
+| Hackathon page on the host project's site | https://www.oneaquahealth.eu/oneaquahealth-ieee-global-hackathon/ |
+| **The host project (OneAquaHealth)** | https://www.oneaquahealth.eu/ |
+| Host project on CORDIS (EU Horizon, ID 101086521) | https://cordis.europa.eu/project/id/101086521 |
+| Their citizen-science project | https://www.oneaquahealth.eu/citizen-science-project/ |
+| Their Resilience Map (already-shipped tool) | https://apps.oneaquahealth.eu/resmap/ |
+| Their backing API (**401 — we have no access**) | `https://api.enora-oah.eu` |
+| **Our public repository** | https://github.com/chanderbhanu096/riparia |
+| **Our live application** | https://riparia-oah.azurewebsites.net |
+| Our API docs (auto-generated) | https://riparia-oah.azurewebsites.net/docs |
+| Our design canvas (3 directions) | https://claude.ai/artifact/Gg5A9vHAgoTA2GZWvZftzd |
+
+### 00.3 Where this stands right now (2026-09-15)
+
+| | |
+|---|---|
+| **Submission deadline** | **2026-09-30, 21:00 PDT** — target submission **2026-09-29**, a day early |
+| Days left at last update | ~15 calendar days |
+| Builder | **Solo student.** Not a team. Plan against one person's partial attention |
+| Phases done | P0 lock · P1 ethical spine · P2 vision pass · P3 reviewer surfaces · design direction chosen and built through all surfaces |
+| **Phase remaining** | **P4** — One Health site summary + standards export · then harden · then demo video + submit |
+| Deliverables status | Public repo ✅ · working prototype ✅ (deployed) · **demo video ❌ not started** · project description ❌ · track alignment statement ❌ |
+| Tests | 38 assessment-contract checks, `cd backend && python3 test_assess.py` |
+
+### 00.4 The product thesis, and why it is shaped this way
+
+The problem is **not** that citizen stream data is under-visualised. It is that it is
+**under-trusted**, because the things people report look alike: filamentous algae,
+a cyanobacterial bloom and sewage fungus are three very different things that all read
+as "green slimy stuff". Getting it wrong in either direction means a missed pollution
+incident or a false alarm.
+
+Two ideas carry the whole entry:
+
+1. **Draw the specimens, do not describe them.** In 1843 Anna Atkins published
+   *Photographs of British Algae: Cyanotype Impressions*, the first book ever illustrated
+   with photographs, explicitly as a visual companion to Harvey's unillustrated manual —
+   **because written descriptions of algae were not enough to identify them by.** Same
+   problem, same answer, 183 years later.
+2. **We are not inventing human-in-the-loop; we are extending a proven one.** The UK
+   **Riverfly / ARMI** scheme (>2,000 volunteers, >1,600 sites) works because it has a
+   regulator-set *trigger level* and a *local coordinator who screens results before
+   escalation*. But it needs trained volunteers doing kick-sampling. A low-barrier
+   visual app has neither piece. **RIPARIA supplies both for the low-barrier case.**
+
+### 00.5 The codebase, file by file
+
+```
+backend/
+  main.py              composition root only: app, middleware, routers, static
+  config.py            all settings in one place (env wins over .env)
+  domain/              WHAT AN OBSERVATION MEANS. Pure: no I/O, no framework.
+    field_protocol.py    ← ALL ecological content, each item cited to published
+                           method. A freshwater ecologist can review the entire
+                           domain by reading this ONE file. Start here.
+    assess.py            the four dimensions (see 00.7)
+  adapters/            the only code touching the outside world
+    store.py             SQLite. Enforces: original answers are WRITE-ONCE.
+    vision/              model providers behind one interface
+      azure_openai.py      Azure AI Foundry, gpt-4.1-mini
+      null.py              offline provider; always available
+  api/                 HTTP shape only, one module per resource
+  test_assess.py       38 contract checks — the guard against risk R8
+frontend/src/
+  App.jsx  Capture.jsx  Review.jsx      the three surfaces
+  Specimens.jsx                          all drawings (specimens + indicator marks)
+  index.css                              design tokens + type scale
+design/                the design-direction artboards and their generator
+```
+
+**Adding an ecological indicator is one dict entry in `field_protocol.py`.** The frontend
+picks it up automatically via `/api/protocol` and needs no change.
+
+### 00.6 Running and deploying it
+
+```bash
+# backend
+cd backend && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/uvicorn main:app --port 8000          # .env is OPTIONAL (see 00.7)
+
+# frontend
+cd frontend && npm install && npm run dev -- --port 5180
+
+# the one runnable check
+cd backend && python3 test_assess.py
+```
+
+**Deploy** (Azure App Service `riparia-oah`, resource group `signwise-rg`, on the owner's
+existing B1 plan): build the frontend, stage `backend/*.py` + `domain/ adapters/ api/` +
+`frontend/dist` as `static/`, zip, `az webapp deploy`. Credentials are **Azure App
+Settings**, never in the repo (`.env` is gitignored, `.env.example` is committed).
+
+> **Two deploy traps, both already paid for:**
+> 1. `az webapp deploy` has exited **0 while reporting a failed instance**, and has
+>    reported failure while the app was in fact healthy. **Verify against the running
+>    app, never against the deploy command.** The reliable probe is the bundle hash in
+>    the served `index.html`, not `/api/health`.
+> 2. A cold start takes ~2 minutes. The site serves the **old** build during it.
+
+### 00.7 Rules that must not be broken
+
+These are the product's spine. Everything else is negotiable; these are not.
+
+1. **No auto-accept and no auto-reject.** Nothing is "validated" without a named reviewer.
+2. **There is no single confidence or trust score.** Four separate, separately-labelled
+   dimensions: *completeness*, *detected inconsistency*, *ecological urgency*,
+   *review status*. Merging them re-invents the unvalidated truth measure we removed.
+3. **Urgency is never lowered by uncertainty.** An unclear report of something serious
+   ranks **above** a tidy report of nothing much.
+4. **The citizen's original answers are immutable** and always shown beside any clarification.
+5. **The model may only raise a question.** It cannot set urgency, resolve an indicator,
+   or alter a record. *(Our own vision model was caught inventing "rocks and vegetation"
+   in a picture of two coloured rectangles, and prompt-hardening did not fix it — see D-023.)*
+6. **Colour means diagnosis.** Red `#b02d18` is the citizen safety precaution and
+   nothing else — not urgency, not errors. Ochre `#8a5214` is ecological urgency.
+7. **The app must work with no model at all.** `VISION_PROVIDER=null`, or simply no
+   `.env`. The degraded path was built first and is exercised daily.
+8. **Never claim more than we can show.** The drawings are schematic aids, not
+   identification plates. The FHIR export is a *proposed mapping*. Urgency is triage,
+   **not** a Water Framework Directive classification.
+
+### 00.8 What is left
+
+1. **P4** — One Health site summary + FAIR/ODH export with a proposed FHIR mapping (D-007, D-014).
+2. **Harden** — real-phone pass, outdoor legibility, keyboard and VoiceOver (all currently unverified).
+3. **A2/A3** — the observation-to-action diagram and one annotated export example (D-016); the cheapest Impact points available.
+4. **A1** — the small scripted walkthrough, honestly labelled as a walkthrough and not a study (D-015).
+5. **Demo video** (3–5 min) + project description + track alignment statement. **Not started.**
+
+### 00.9 Reading order, and where answers live
+
+| Question | File |
+|---|---|
+| What is this and why is it shaped this way? | **this section**, then §0 |
+| Why was every decision made? | §1 and §1b of this file, D-001 … D-030 |
+| What does the ecology mean? | `backend/domain/field_protocol.py` — every claim cited |
+| What did an independent reviewer say? | `REVIEW_GPT.md`, `DESIGN_VERDICT_GPT.md`, `UX_REVIEW_GPT.md` |
+| What does the product claim publicly? | `README.md`, including its **limitations** section |
+
+**Decisions are append-only.** Never edit a past entry; add a new one that supersedes it
+and mark the old `Status: SUPERSEDED by D-0XX`. §1b amends §1 — reading §1 alone will
+rebuild mistakes that have already been caught and paid for.
+
+### 00.10 Already tried and rejected — do not re-propose
+
+| Idea | Why it is dead |
+|---|---|
+| Track 2 (dashboards) | The consortium's data is behind a 401, and they already ship Resilience Map, City Dashboards and GEOSSIP. D-002, D-010 |
+| A single "confidence score" | Invents an unvalidated truth measure. D-012 |
+| "Clear water + sewage odour = contradiction" | **Ecologically wrong** — dissolved sewage makes odour without turbidity. D-012 |
+| "Turbidity without rain = implausible" | **Backwards** — that pattern suggests a discharge event, the most report-worthy case. D-012 |
+| Penalising missing EXIF GPS | Most phones strip it. Missing evidence is not evidence against a person. D-012 |
+| A calibration/learning dashboard | A handful of staged labels cannot establish calibration. D-011 |
+| The Cyanotype design direction | Monochrome by process, so it cannot show the colour that identifies the growth. D-027 |
+| Gradients, glassmorphism, accent-bar cards | The current house style of AI-built sites; undoes the editorial direction. D-029 |
+| Queue search / sorting / pre-send summary | Explicitly ranked as non-blockers with the time left. D-030 |
 
 ---
 
@@ -676,14 +865,15 @@ fifth requires a new decision entry explaining what it displaces.
 
 ## 6. For any agent joining this work
 
-1. Read §0 (facts) and §1 (decisions) before proposing anything.
-2. The rubric in §0.2 is the objective function. Argue against a decision **in rubric terms** or not at all.
-3. Do not add a component that is not in D-004. Five is already the ceiling for 15 days.
-4. Ponytail mode is active: reuse before writing, stdlib before dependency, shortest thing that works. But **never** shorten: the human-in-the-loop guarantee (R2), data-honesty labelling (D-006), accessibility (UX = 15%).
-5. Append your decisions here as `D-0XX`. Never edit history.
-6. **Read §1b (D-010…D-017) before §1.** The post-review decisions amend the originals; acting on D-002/D-004/D-008 alone will rebuild mistakes that have already been caught and paid for.
-7. Three things are **non-negotiable** and no laziness rule may touch them: the human-in-the-loop contract (D-012), data-honesty labelling (D-006/D-015), and accessibility (UX = 15%).
-8. Build count is **4**. A fifth component requires a decision entry naming what it displaces.
+**Read [§00 START HERE](#00-start-here--full-briefing-for-anyone-opening-this-cold) first** —
+it is the full briefing and it assumes no prior context. Then:
+
+1. §0.2 (the rubric) is the objective function. Argue against a decision **in rubric terms** or not at all.
+2. **Read §1b (D-010 … D-030) before §1.** The later decisions amend the earlier ones; acting on D-002/D-004/D-008 alone rebuilds mistakes already caught and paid for.
+3. Do not add a component that is not in D-004 as amended. Build count is **4**, not 5.
+4. Ponytail mode is active: reuse before writing, stdlib before dependency, shortest thing that works. But **never** shorten the eight rules in §00.7 — they are the product's spine.
+5. Append your decisions as `D-0XX`. **Never edit history**; supersede it.
+6. Three independent reviews are on file (`REVIEW_GPT.md`, `DESIGN_VERDICT_GPT.md`, `UX_REVIEW_GPT.md`). Several findings in them were correct and expensive; check them before re-deriving.
 
 ---
 
@@ -748,6 +938,7 @@ credible delivery; not the most elaborate architecture, and never guessed entran
 |---|---|---|
 | 2026-09-14 21:55 CEST | Claude (Opus 5) | File created. D-001…D-009 recorded. Track 3 selected over owner's initial Track 2 preference, with reversal path D-003. |
 | 2026-09-14 22:05 CEST | Codex (GPT) via `duet` | Adversarial strategy review, run `20260914-215657-dbebe6`. Verdict **revise**, 8 findings. Earlier run `20260914-215306-6baadf` discarded (inverted roles, placeholder output). |
+| 2026-09-15 11:10 CEST | Claude (Opus 5) | Added **§00 START HERE** — a complete standing briefing so any agent or person opening this file cold (in Codex or anywhere else) has the goal, every link, the product thesis, the file-by-file codebase map, run/deploy instructions with both known deploy traps, the eight non-negotiable rules, what is left, and a table of ideas already tried and rejected. Also untracked `adapters/riparia.db` and the `design/_*.html` scratch previews, which had been committed to the public repo. |
 | 2026-09-15 10:30 CEST | Claude (Opus 5) | **D-030** refinement pass on GPT's UX review. 6px corners on controls only; full type scale reset (Bodoni confined to masthead/titles, questions become prose, 16px inputs). Fixed a **correction flow that collected no correction**, a heading promising one question when it asked three, red leaking onto non-safety UI, a failed save wiping the reviewer's typed assessment, invisible keyboard focus, and a paper texture painted beneath an opaque root. |
 | 2026-09-15 09:15 CEST | Claude (Opus 5) | **D-029** owner reported the built app looked plain — correct: the drawings only appeared after submitting, so the first screen was ten text rectangles. Illustration moved to the capture picker (10 drawn indicator marks), clamp-scaled display type, IBM Plex Mono for the metadata layer, one fixed paper-texture layer. Gradients/glassmorphism explicitly rejected and recorded in the CSS. |
 | 2026-09-15 07:40 CEST | Claude (Opus 5) | **D-028** owner chose **Broadsheet**. Design system tokenised; specimens ported to React and extended to the sheen and foam differentials; reviewer-surface guardrails fixed (urgency never wears the precaution red, the three dimensions stay separate and text-labelled, no black panels per queue row). |
